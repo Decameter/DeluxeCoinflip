@@ -14,12 +14,15 @@ import me.clip.placeholderapi.PlaceholderAPI;
 
 public class CustomCurrencyProvider extends EconomyProvider {
 
+    private final DeluxeCoinflipPlugin plugin;
+
     private final String rawBalancePlaceholder;
     private final String withdrawCommandTemplate;
     private final String depositCommandTemplate;
 
     public CustomCurrencyProvider(String identifier, DeluxeCoinflipPlugin plugin) {
         super(identifier);
+        this.plugin = plugin;
         this.rawBalancePlaceholder = plugin.getConfig().getString("settings.providers.CUSTOM_CURRENCY.raw_balance_placeholder", "%vault_eco_Balance_fixed%");
         this.withdrawCommandTemplate = plugin.getConfig().getString("settings.providers.CUSTOM_CURRENCY.commands.withdraw", "eco take {player} {amount}");
         this.depositCommandTemplate = plugin.getConfig().getString("settings.providers.CUSTOM_CURRENCY.commands.deposit", "eco give {player} {amount}");
@@ -58,6 +61,6 @@ public class CustomCurrencyProvider extends EconomyProvider {
 
     private void executeCommand(String command) {
         ConsoleCommandSender console = Bukkit.getServer().getConsoleSender();
-        Bukkit.dispatchCommand(console, command);
+        plugin.getScheduler().runTask(() -> Bukkit.dispatchCommand(console, command));
     }
 }
