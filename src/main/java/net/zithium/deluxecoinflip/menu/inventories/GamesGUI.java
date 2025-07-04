@@ -141,10 +141,8 @@ public class GamesGUI {
             if (noGamesSlot >= 0) {
                 gui.setItem(noGamesSlot, new GuiItem(noGames));
             }
-        }
-
         // Otherwise, list available games
-        else {
+        } else {
             NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.US);
             Map<UUID, CoinflipGame> coinflipGames = new HashMap<>(gameManager.getCoinflipGames());
             for (Map.Entry<UUID, CoinflipGame> entry : coinflipGames.entrySet()) {
@@ -164,9 +162,9 @@ public class GamesGUI {
                 ItemStackBuilder builder;
                 if (materialBuilder != null) {
                     // Create a new instance with the same properties as materialBuilder
-                    builder = new ItemStackBuilder(materialBuilder.build());
+                    new ItemStackBuilder(materialBuilder.build());
                 } else {
-                    builder = new ItemStackBuilder(coinflipGame.getCachedHead());
+                    new ItemStackBuilder(coinflipGame.getCachedHead());
                 }
 
                 if (config.contains("games-gui.coinflip-game.material") && !config.getString("games-gui.coinflip-game.material").equalsIgnoreCase("PLAYER_HEAD")) {
@@ -187,13 +185,13 @@ public class GamesGUI {
                 guiItem.setAction(event -> {
                     if (!gameManager.getCoinflipGames().containsKey(playerFromID.getUniqueId())) {
                         Messages.ERROR_GAME_UNAVAILABLE.send(player);
-                        openInventory(player);
+                        plugin.getScheduler().runTaskAtEntity(player, () -> openInventory(player));
                         return;
                     }
 
                     if (player.getUniqueId().equals(playerFromID.getUniqueId())) {
                         Messages.ERROR_COINFLIP_SELF.send(player);
-                        gui.close(player);
+                        plugin.getScheduler().runTaskAtEntity(player, () -> gui.close(player));
                         return;
                     }
 
@@ -210,8 +208,10 @@ public class GamesGUI {
                     economyManager.getEconomyProvider(game.getProvider()).withdraw(player, game.getAmount());
                     plugin.getGameManager().removeCoinflipGame(playerFromID.getUniqueId());
 
-                    event.getWhoClicked().closeInventory();
-                    plugin.getInventoryManager().getCoinflipGUI().startGame(player, playerFromID, game);
+                    plugin.getScheduler().runTaskAtEntity(player, () -> {
+                        event.getWhoClicked().closeInventory();
+                        plugin.getInventoryManager().getCoinflipGUI().startGame(player, playerFromID, game);
+                    });
                 });
                 gui.addItem(guiItem);
             }

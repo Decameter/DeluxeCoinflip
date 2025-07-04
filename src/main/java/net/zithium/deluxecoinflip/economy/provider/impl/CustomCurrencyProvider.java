@@ -58,7 +58,6 @@ public class CustomCurrencyProvider extends EconomyProvider {
         executeCommand(command);
     }
 
-
     private void executeCommand(String command) {
         ConsoleCommandSender console = Bukkit.getServer().getConsoleSender();
         plugin.getScheduler().runTask(() -> Bukkit.dispatchCommand(console, command));

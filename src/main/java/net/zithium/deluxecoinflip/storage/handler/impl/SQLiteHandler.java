@@ -9,16 +9,17 @@ import net.zithium.deluxecoinflip.DeluxeCoinflipPlugin;
 import net.zithium.deluxecoinflip.game.CoinflipGame;
 import net.zithium.deluxecoinflip.storage.PlayerData;
 import net.zithium.deluxecoinflip.storage.handler.StorageHandler;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -28,12 +29,10 @@ public class SQLiteHandler implements StorageHandler {
 
     private DeluxeCoinflipPlugin plugin;
     private File file;
-    private Connection connection;
 
     private final String TABLE_NAME = "players";
 
     @Override
-    @SuppressWarnings("all") // Supressing ignored warning for file.createNewFile();
     public boolean onEnable(final DeluxeCoinflipPlugin plugin) {
         this.plugin = plugin;
         file = new File(plugin.getDataFolder(), "database.db");
@@ -51,28 +50,28 @@ public class SQLiteHandler implements StorageHandler {
 
     @Override
     public void onDisable() {
-        try {
-            if (connection != null && !connection.isClosed()) connection.close();
-        } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Error occurred while closing the database connection.", e);
+        plugin.getLogger().info("Saving player data to database...");
+
+        Map<UUID, PlayerData> playerDataMap = DeluxeCoinflipPlugin.getInstance().getStorageManager().getPlayerDataMap();
+
+        for (PlayerData player : new ArrayList<>(playerDataMap.values())) {
+            savePlayer(player);
         }
+
+        playerDataMap.clear();
     }
 
-    public synchronized Connection getConnection() {
+    public Connection getConnection() {
         try {
-            if (connection == null || connection.isClosed()) {
-                Class.forName("org.sqlite.JDBC");
-                connection = DriverManager.getConnection("jdbc:sqlite:" + file);
-            }
-            return connection;
+            Class.forName("org.sqlite.JDBC");
+            return DriverManager.getConnection("jdbc:sqlite:" + file);
         } catch (SQLException | ClassNotFoundException ex) {
-            plugin.getLogger().log(Level.SEVERE, "Error occurred while attempting to setup the database connection.", ex);
+            plugin.getLogger().log(Level.SEVERE, "Error occurred while setting up the database connection.", ex);
+            return null;
         }
-        return connection;
     }
 
     private synchronized void createTable() {
-        checkPre2_7_10();
         try (Connection tableConnection = getConnection();
              Statement statement = tableConnection.createStatement()) {
             String createPlayersTable = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
@@ -95,51 +94,27 @@ public class SQLiteHandler implements StorageHandler {
         }
     }
 
-    private synchronized void checkPre2_7_10() {
-        try {
-            Connection tableConnection = getConnection();
-            DatabaseMetaData metaData = tableConnection.getMetaData();
-
-            ResultSet rsTotalLoss = metaData.getColumns(null, null, TABLE_NAME, "total_loss");
-
-            if (rsTotalLoss.next()) return;
-
-            plugin.getLogger().log(Level.INFO, "Pre-2.7.11 table found, updating database...");
-
-            String query1 = "ALTER TABLE " + TABLE_NAME + " ADD total_loss BIGINT";
-            String query2 = "ALTER TABLE " + TABLE_NAME + " ADD total_gambled BIGINT";
-
-            Statement statement = tableConnection.createStatement();
-
-            statement.execute(query1);
-            statement.execute(query2);
-
-        } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Error occurred while creating database tables.", e);
-        }
-    }
-
     @Override
     public synchronized PlayerData getPlayer(final UUID uuid) {
         String sql = "SELECT wins, losses, profit, total_loss, total_gambled, broadcasts FROM players WHERE uuid=?;";
         try (Connection playerConnection = getConnection();
              PreparedStatement preparedStatement = playerConnection.prepareStatement(sql)) {
             preparedStatement.setString(1, uuid.toString());
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()) {
-                PlayerData playerData = new PlayerData(uuid);
-                playerData.setWins(resultSet.getInt("wins"));
-                playerData.setLosses(resultSet.getInt("losses"));
-                playerData.setProfit(resultSet.getLong("profit"));
-                playerData.setTotalLosses(resultSet.getLong("total_loss"));
-                playerData.setTotalGambled(resultSet.getLong("total_gambled"));
-                playerData.setDisplayBroadcastMessages(resultSet.getBoolean("broadcasts"));
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    PlayerData playerData = new PlayerData(uuid);
+                    playerData.setWins(resultSet.getInt("wins"));
+                    playerData.setLosses(resultSet.getInt("losses"));
+                    playerData.setProfit(resultSet.getLong("profit"));
+                    playerData.setTotalLosses(resultSet.getLong("total_loss"));
+                    playerData.setTotalGambled(resultSet.getLong("total_gambled"));
+                    playerData.setDisplayBroadcastMessages(resultSet.getBoolean("broadcasts"));
 
-                return playerData;
+                    return playerData;
+                }
             }
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Error occurred while attempting to get a player's data.", e);
-            return null;
         }
         return new PlayerData(uuid);
     }
@@ -205,5 +180,25 @@ public class SQLiteHandler implements StorageHandler {
             plugin.getLogger().log(Level.SEVERE, "Error occurred while attempting to get all coinflip games.", e);
         }
         return games;
+    }
+
+    @Override
+    public CoinflipGame getCoinflipGame(@NotNull UUID uuid) {
+        final String SQL = "SELECT * FROM games WHERE uuid = ?";
+
+        try (Connection GAME_CONNECTION = getConnection();
+             PreparedStatement preparedStatement = GAME_CONNECTION.prepareStatement(SQL)) {
+            preparedStatement.setString(1, uuid.toString());
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                String provider = resultSet.getString("provider");
+                long amount = resultSet.getLong("amount");
+                return new CoinflipGame(uuid, provider, amount);
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Error occurred while attempting to get a coinflip game.", e);
+        }
+
+        return null;
     }
 }

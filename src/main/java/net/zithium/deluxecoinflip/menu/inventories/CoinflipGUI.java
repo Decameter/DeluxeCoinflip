@@ -15,13 +15,13 @@ import net.zithium.deluxecoinflip.config.ConfigType;
 import net.zithium.deluxecoinflip.config.Messages;
 import net.zithium.deluxecoinflip.economy.EconomyManager;
 import net.zithium.deluxecoinflip.game.CoinflipGame;
+import net.zithium.deluxecoinflip.game.GameAnimationRunner;
 import net.zithium.deluxecoinflip.storage.PlayerData;
 import net.zithium.deluxecoinflip.storage.StorageManager;
 import net.zithium.deluxecoinflip.utility.ItemStackBuilder;
 import net.zithium.deluxecoinflip.utility.TextUtil;
 import net.zithium.library.utils.ColorUtil;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -45,6 +45,7 @@ public class CoinflipGUI implements Listener {
     private final DeluxeCoinflipPlugin plugin;
     private final EconomyManager economyManager;
     private final FileConfiguration config;
+    private final GameAnimationRunner gameAnimationRunner;
     private final String coinflipGuiTitle;
     private final boolean taxEnabled;
     private final double taxRate;
@@ -55,6 +56,7 @@ public class CoinflipGUI implements Listener {
         this.plugin = plugin;
         this.economyManager = plugin.getEconomyManager();
         this.config = plugin.getConfigHandler(ConfigType.CONFIG).getConfig();
+        this.gameAnimationRunner = new GameAnimationRunner(plugin);
 
         // Load config values into variables this helps improve performance.
         this.coinflipGuiTitle = ColorUtil.color(config.getString("coinflip-gui.title"));
@@ -81,46 +83,25 @@ public class CoinflipGUI implements Listener {
         OfflinePlayer winner = players.get(random.nextInt(players.size()));
         OfflinePlayer loser = (winner == creator) ? opponent : creator;
 
-        runAnimation(winner, loser, game);
+        // Mitigate concurrency issues with Folia
+        Gui winnerGui = createGameGui();
+        Gui loserGui = createGameGui();
+
+        this.gameAnimationRunner.runAnimation(winner, loser, game, winnerGui, loserGui);
     }
 
-    private void runAnimation(OfflinePlayer winner, OfflinePlayer loser, CoinflipGame game) {
-        final WrappedScheduler scheduler = plugin.getScheduler();
+    private Gui createGameGui() {
         Gui gui = Gui.gui().rows(3).title(Component.text(coinflipGuiTitle)).create();
         gui.disableAllInteractions();
-
-        GuiItem winnerHead = new GuiItem(new ItemStackBuilder(
-                winner.equals(game.getOfflinePlayer()) ? game.getCachedHead() : new ItemStack(Material.PLAYER_HEAD)
-        ).withName(ChatColor.YELLOW + winner.getName()).setSkullOwner(winner).build());
-
-        GuiItem loserHead = new GuiItem(new ItemStackBuilder(
-                winner.equals(game.getOfflinePlayer()) ? new ItemStack(Material.PLAYER_HEAD) : game.getCachedHead()
-        ).withName(ChatColor.YELLOW + loser.getName()).setSkullOwner(loser).build());
-
-        Player winnerPlayer = Bukkit.getPlayer(winner.getUniqueId());
-        Player loserPlayer = Bukkit.getPlayer(loser.getUniqueId());
-
-        if (winnerPlayer != null) {
-            scheduler.runTaskAtEntity(winnerPlayer, () -> {
-                gui.open(winnerPlayer);
-                startAnimation(scheduler, gui, winnerHead, loserHead, winner, loser, game, winnerPlayer, winnerPlayer.getLocation(), true);
-            });
-        }
-
-        if (loserPlayer != null) {
-            scheduler.runTaskAtEntity(loserPlayer, () -> {
-                gui.open(loserPlayer);
-                startAnimation(scheduler, gui, winnerHead, loserHead, winner, loser, game, loserPlayer, loserPlayer.getLocation(), false);
-            });
-        }
+        return gui;
     }
 
-    private void startAnimation(WrappedScheduler scheduler, Gui gui, GuiItem winnerHead, GuiItem loserHead,
+    public void startAnimation(WrappedScheduler scheduler, Gui gui, GuiItem winnerHead, GuiItem loserHead,
                                 OfflinePlayer winner, OfflinePlayer loser, CoinflipGame game,
                                 Player targetPlayer, Location regionLoc, boolean isWinnerThread) {
 
-        ConfigurationSection animationConfig1 = plugin.getConfig().getConfigurationSection("coinflip-gui.animation.1.");
-        ConfigurationSection animationConfig2 = plugin.getConfig().getConfigurationSection("coinflip-gui.animation.2.");
+        ConfigurationSection animationConfig1 = plugin.getConfig().getConfigurationSection("coinflip-gui.animation.1");
+        ConfigurationSection animationConfig2 = plugin.getConfig().getConfigurationSection("coinflip-gui.animation.2");
 
         ItemStack firstAnimationItem = (animationConfig1 != null)
                 ? ItemStackBuilder.getItemStack(animationConfig1).build()
@@ -165,9 +146,10 @@ public class CoinflipGUI implements Listener {
                 }
 
                 if (isWinnerThread) {
+                    long providedWinAmount = finalWinAmount;
                     scheduler.runTask(() -> {
-                        economyManager.getEconomyProvider(game.getProvider()).deposit(winner, winAmount);
-                        Bukkit.getPluginManager().callEvent(new CoinflipCompletedEvent(winner, loser, winAmount));
+                        economyManager.getEconomyProvider(game.getProvider()).deposit(winner, providedWinAmount);
+                        Bukkit.getPluginManager().callEvent(new CoinflipCompletedEvent(winner, loser, providedWinAmount));
                     });
 
                     if (config.getBoolean("discord.webhook.enabled", false) || config.getBoolean("discord.bot.enabled", false))
@@ -176,7 +158,6 @@ public class CoinflipGUI implements Listener {
                             throwable.printStackTrace();
                             return null;
                         });
-
 
                     // Update player stats
                     StorageManager storageManager = plugin.getStorageManager();
@@ -227,7 +208,7 @@ public class CoinflipGUI implements Listener {
                 }
             }
 
-            scheduler.runTaskLaterAtEntity(targetPlayer, task[0], 10L);
+            scheduler.runTaskLaterAtLocation(regionLoc, task[0], 10L);
         };
 
         scheduler.runTaskAtLocation(regionLoc, task[0]);

@@ -6,28 +6,23 @@
 package net.zithium.deluxecoinflip.storage;
 
 import net.zithium.deluxecoinflip.DeluxeCoinflipPlugin;
+import net.zithium.deluxecoinflip.config.Messages;
 import net.zithium.deluxecoinflip.exception.InvalidStorageHandlerException;
+import net.zithium.deluxecoinflip.game.CoinflipGame;
 import net.zithium.deluxecoinflip.storage.handler.StorageHandler;
 import net.zithium.deluxecoinflip.storage.handler.impl.SQLiteHandler;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Stream;
 
 public class StorageManager {
@@ -71,24 +66,9 @@ public class StorageManager {
     }
 
     public void onDisable(boolean shutdown) {
-        // Delete old data folder if empty
-        File directory = new File(plugin.getDataFolder().getAbsolutePath() + File.separator + "data");
-        if (directory.exists() && isDirectoryEmpty(directory.toPath())) directory.delete();
-
-        plugin.getLogger().info("Saving player data to database...");
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.execute(() -> {
-            for (PlayerData player : new ArrayList<>(playerDataMap.values())) {
-                storageHandler.savePlayer(player);
-            }
-
-            if (shutdown) {
-                playerDataMap.clear();
-                storageHandler.onDisable();
-            }
-
-        });
-        scheduler.shutdown();
+        if (shutdown) {
+            storageHandler.onDisable();
+        }
     }
 
     public Optional<PlayerData> getPlayer(UUID uuid) {
@@ -113,6 +93,21 @@ public class StorageManager {
 
     public void loadPlayerData(UUID uuid) {
         DeluxeCoinflipPlugin.getInstance().getScheduler().runTaskAsynchronously(() -> playerDataMap.put(uuid, storageHandler.getPlayer(uuid)));
+        DeluxeCoinflipPlugin.getInstance().getScheduler().runTaskAsynchronously(() -> {
+            playerDataMap.put(uuid, storageHandler.getPlayer(uuid));
+
+            CoinflipGame game = storageHandler.getCoinflipGame(uuid);
+            if (game != null) {
+                plugin.getScheduler().runTask(() -> {
+                    OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+                    plugin.getEconomyManager().getEconomyProvider(game.getProvider()).deposit(player, game.getAmount());
+                    Messages.GAME_REFUNDED.send(player.getPlayer(), "{AMOUNT}", game.getAmount(), "{PROVIDER}", game.getProvider());
+                });
+
+                storageHandler.deleteCoinfip(uuid);
+                plugin.getGameManager().removeCoinflipGame(uuid);
+            }
+        });
     }
 
     public void savePlayerData(PlayerData player, boolean removeCache) {
@@ -123,15 +118,11 @@ public class StorageManager {
         });
     }
 
-    public StorageHandler getStorageHandler() {
-        return storageHandler;
+    public Map<UUID, PlayerData> getPlayerDataMap() {
+        return playerDataMap;
     }
 
-    private static boolean isDirectoryEmpty(final Path directory) {
-        try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(directory)) {
-            return !dirStream.iterator().hasNext();
-        } catch (IOException ex) {
-            return false;
-        }
+    public StorageHandler getStorageHandler() {
+        return storageHandler;
     }
 }
