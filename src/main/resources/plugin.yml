@@ -5,6 +5,9 @@ authors: [ ItzSave, ItsLewizzz, ItsSimplyLeo ]
 api-version: 1.19
 folia-supported: true
 
+depend:
+  - Neon
+
 softdepend:
   - PlaceholderAPI
   - Vault

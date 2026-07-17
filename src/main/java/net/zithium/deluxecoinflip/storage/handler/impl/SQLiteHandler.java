@@ -145,7 +145,7 @@ public class SQLiteHandler implements StorageHandler {
                     playerData.setProfit(resultSet.getLong("profit"));
                     playerData.setTotalLosses(resultSet.getLong("total_loss"));
                     playerData.setTotalGambled(resultSet.getLong("total_gambled"));
-                    playerData.setDisplayBroadcastMessages(resultSet.getBoolean("broadcasts"));
+                    //playerData.setDisplayBroadcastMessages(resultSet.getBoolean("broadcasts")); - Handled by the Neon setting
 
                     return playerData;
                 }

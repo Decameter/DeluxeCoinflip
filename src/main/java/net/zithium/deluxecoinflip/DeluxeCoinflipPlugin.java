@@ -107,6 +107,7 @@ public class DeluxeCoinflipPlugin extends JavaPlugin implements DeluxeCoinflipAP
         registerConfig(ConfigType.CONFIG);
         registerConfig(ConfigType.MESSAGES);
         Messages.setConfiguration(configMap.get(ConfigType.MESSAGES).getConfig());
+        Settings.register();
 
         // Initialize economy manager early
         economyManager = new EconomyManager(this);

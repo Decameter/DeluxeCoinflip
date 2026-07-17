@@ -79,27 +79,27 @@ public class CoinflipCommand extends BaseCommand {
         }
     }
 
-    @Subcommand("about")
-    public void aboutSubCommand(final CommandSender sender) {
-        // We are fully aware of this deprecation.
-        @SuppressWarnings("deprecation")
-        final String pluginVersion = plugin.getDescription().getVersion();
-
-        sender.sendMessage("");
-        sender.sendMessage(TextUtil.color("&e&lDeluxeCoinflip"));
-        sender.sendMessage(TextUtil.color("&eVersion: &fv" + pluginVersion));
-        sender.sendMessage(TextUtil.color("&eAuthor: &fItzSave"));
-
-        if (!TextUtil.isValidDownload()) {
-            sender.sendMessage(TextUtil.color("&4Registered to: &cFailed to find licensed owner to this plugin. Contact developer to report possible leak (itzsave)."));
-        } else if (TextUtil.isBuiltByBit()) {
-            sender.sendMessage(TextUtil.color("&4Registered to: &chttps://builtbybit.com/members/%%__USER__%%/"));
-        } else {
-            sender.sendMessage(TextUtil.color("&4Registered to: &chttps://www.spigotmc.org/members/%%__USER__%%/"));
-        }
-
-        sender.sendMessage("");
-    }
+//    @Subcommand("about")
+//    public void aboutSubCommand(final CommandSender sender) {
+//        // We are fully aware of this deprecation.
+//        @SuppressWarnings("deprecation")
+//        final String pluginVersion = plugin.getDescription().getVersion();
+//
+//        sender.sendMessage("");
+//        sender.sendMessage(TextUtil.color("&e&lDeluxeCoinflip"));
+//        sender.sendMessage(TextUtil.color("&eVersion: &fv" + pluginVersion));
+//        sender.sendMessage(TextUtil.color("&eAuthor: &fItzSave"));
+//
+//        if (!TextUtil.isValidDownload()) {
+//            sender.sendMessage(TextUtil.color("&4Registered to: &cFailed to find licensed owner to this plugin. Contact developer to report possible leak (itzsave)."));
+//        } else if (TextUtil.isBuiltByBit()) {
+//            sender.sendMessage(TextUtil.color("&4Registered to: &chttps://builtbybit.com/members/%%__USER__%%/"));
+//        } else {
+//            sender.sendMessage(TextUtil.color("&4Registered to: &chttps://www.spigotmc.org/members/%%__USER__%%/"));
+//        }
+//
+//        sender.sendMessage("");
+//    }
 
     @Subcommand("toggle")
     public void toggleSubCommand(final CommandSender sender) {

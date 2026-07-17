@@ -5,6 +5,13 @@
 
 package net.zithium.deluxecoinflip.storage;
 
+import net.leonemc.neon.spigot.NeonAPI;
+import net.leonemc.neon.spigot.features.settings.SettingsService;
+import net.leonemc.neon.spigot.user.User;
+import net.zithium.deluxecoinflip.Settings;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -15,24 +22,18 @@ public class PlayerData {
     private final UUID uuid;
     private int wins, losses;
     private long profit, totalLosses, totalGambled;
-    private boolean displayBroadcastMessages;
 
-    public PlayerData(UUID uuid, int wins, int losses, long profit, long totalLosses, long totalGambled, boolean displayBroadcastMessages) {
+    public PlayerData(UUID uuid, int wins, int losses, long profit, long totalLosses, long totalGambled) {
         this.uuid = uuid;
         this.losses = losses;
         this.wins = wins;
         this.profit = profit;
         this.totalLosses = totalLosses;
         this.totalGambled = totalGambled;
-        this.displayBroadcastMessages = displayBroadcastMessages;
-    }
-
-    public PlayerData(UUID uuid, int wins, int losses, long profit, long totalLosses, long totalGambled) {
-        this(uuid, wins, losses, profit, totalLosses, totalGambled, true);
     }
 
     public PlayerData(UUID uuid) {
-        this(uuid, 0, 0, 0, 0, 0, true);
+        this(uuid, 0, 0, 0, 0, 0);
     }
 
     public UUID getUUID() {
@@ -124,10 +125,19 @@ public class PlayerData {
     }
 
     public boolean isDisplayBroadcastMessages() {
-        return displayBroadcastMessages;
+        User user = NeonAPI.getUser(uuid);
+
+        if (user == null) {
+            return true;
+        }
+
+        return SettingsService.INSTANCE.getBooleanSetting(user, Settings.COINFLIP_BROADCASTS);
     }
 
     public void setDisplayBroadcastMessages(boolean value) {
-        this.displayBroadcastMessages = value;
+        User user = NeonAPI.getUser(uuid);
+        if (user != null) {
+            SettingsService.INSTANCE.saveBooleanSetting(user, Settings.COINFLIP_BROADCASTS, value);
+        }
     }
 }
