@@ -35,7 +35,6 @@ public enum Messages {
 
     ERROR_GAME_UNAVAILABLE("coinflip.game-unavailable"),
     ERROR_COINFLIP_SELF("coinflip.cant-coinflip-self"),
-    ENTER_VALUE_FOR_GAME("coinflip.enter-value"),
     CHAT_CANCELLED("coinflip.chat-cancelled"),
     INVALID_CURRENCY("coinflip.invalid-currency"),
     INVALID_AMOUNT("coinflip.invalid-amount"),

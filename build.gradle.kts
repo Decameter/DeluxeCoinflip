@@ -29,7 +29,7 @@ dependencies {
     implementation("com.github.ItzSave:ZithiumLibrary:1f5182b77f")
     implementation("com.tcoded:FoliaLib:0.5.1")
 
-    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:26.2.build.62-beta")
 
     compileOnly("me.clip:placeholderapi:2.12.2")
     compileOnly("com.mojang:authlib:1.5.21")

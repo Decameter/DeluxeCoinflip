@@ -320,7 +320,12 @@ gamebuilder-gui:
     material: ANVIL
     display_name: "&6&lSet Custom Amount"
     lore:
-      - "&7Click to enter a value in chat!"
+      - "&7Click to enter a value in a dialog!"
+    dialog:
+      title: "&lEnter Bet Amount"
+      body:
+        - "&7Enter an amount between &f{MIN_BET}&7 and &f{MAX_BET}&7."
+        - "&7Shortened amounts are supported, e.g. &f5k&7, &f1m&7."
   create-game:
     slot: 26
     material: LIME_DYE

@@ -8,7 +8,16 @@ package net.zithium.deluxecoinflip.menu.inventories;
 import com.tcoded.folialib.impl.PlatformScheduler;
 import dev.triumphteam.gui.guis.Gui;
 import dev.triumphteam.gui.guis.GuiItem;
+import io.papermc.paper.dialog.Dialog;
+import io.papermc.paper.registry.data.dialog.ActionButton;
+import io.papermc.paper.registry.data.dialog.DialogBase;
+import io.papermc.paper.registry.data.dialog.DialogRegistryEntry;
+import io.papermc.paper.registry.data.dialog.action.DialogAction;
+import io.papermc.paper.registry.data.dialog.body.DialogBody;
+import io.papermc.paper.registry.data.dialog.input.DialogInput;
+import io.papermc.paper.registry.data.dialog.type.DialogType;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickCallback;
 import net.zithium.deluxecoinflip.DeluxeCoinflipPlugin;
 import net.zithium.deluxecoinflip.api.events.CoinflipCreatedEvent;
 import net.zithium.deluxecoinflip.config.ConfigType;
@@ -28,6 +37,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.text.NumberFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -180,16 +190,83 @@ public class GameBuilderGUI {
                 ItemStackBuilder.getItemStack(section).build(),
                 event -> {
                     suppressReturn.add(player.getUniqueId());
-                    scheduler.runAtEntity(player, task -> gui.close(player));
-                    plugin.getListenerCache().put(player.getUniqueId(), game);
-                    Messages.ENTER_VALUE_FOR_GAME.send(
-                            player,
-                            "{MIN_BET}", TextUtil.numberFormat(cfg.getLong("settings.minimum-bet")),
-                            "{MAX_BET}", TextUtil.numberFormat(cfg.getLong("settings.maximum-bet"))
-                    );
+                    scheduler.runAtEntity(player, task -> showCustomAmountDialog(player, game, cfg, null));
                 });
 
         gui.setItem(section.getInt("slot"), item);
+    }
+
+    private static final ClickCallback.Options SINGLE_USE_CLICK_OPTIONS = ClickCallback.Options.builder()
+            .uses(1)
+            .lifetime(Duration.ofMinutes(5))
+            .build();
+
+    private void showCustomAmountDialog(Player player, CoinflipGame game, FileConfiguration cfg, String previousInput) {
+        long minimumBet = cfg.getLong("settings.minimum-bet");
+        long maximumBet = cfg.getLong("settings.maximum-bet");
+
+        String dialogTitle = cfg.getString("gamebuilder-gui.custom-amount.dialog.title", "&lEnter Bet Amount");
+        List<String> bodyLines = cfg.getStringList("gamebuilder-gui.custom-amount.dialog.body");
+        String bodyText = String.join("\n", bodyLines)
+                .replace("{MIN_BET}", TextUtil.numberFormat(minimumBet))
+                .replace("{MAX_BET}", TextUtil.numberFormat(maximumBet));
+
+        Component body = Component.text(TextUtil.color(bodyText));
+
+        Dialog dialog = Dialog.create(factory -> {
+            DialogRegistryEntry.Builder builder = factory.empty();
+            builder.base(DialogBase.builder(Component.text(TextUtil.color(dialogTitle)))
+                    .canCloseWithEscape(true)
+                    .body(List.of(DialogBody.plainMessage(body)))
+                    .inputs(List.of(DialogInput.text("amount", Component.text("Amount"))
+                            .initial(previousInput != null ? previousInput : "")
+                            .build()))
+                    .build());
+
+            builder.type(DialogType.multiAction(List.of(
+                    ActionButton.builder(Component.text("Confirm"))
+                            .action(DialogAction.customClick((view, audience) ->
+                                    scheduler.runAtEntity(player, task -> handleCustomAmountSubmit(player, game, cfg, view.getText("amount"))),
+                                    SINGLE_USE_CLICK_OPTIONS))
+                            .build(),
+                    ActionButton.builder(Component.text("Cancel"))
+                            .action(DialogAction.customClick((view, audience) -> scheduler.runAtEntity(player, task -> {
+                                Messages.CHAT_CANCELLED.send(player);
+                                plugin.getInventoryManager().getGameBuilderGUI().openGameBuilderGUI(player, game);
+                            }), SINGLE_USE_CLICK_OPTIONS))
+                            .build()
+            )).build());
+        });
+
+        player.showDialog(dialog);
+    }
+
+    private void handleCustomAmountSubmit(Player player, CoinflipGame game, FileConfiguration cfg, String input) {
+        final Long parsed = TextUtil.parseAmountToLong(input);
+        if (parsed == null) {
+            Messages.INVALID_AMOUNT.send(player, "{INPUT}", input.replace(",", ""));
+            showCustomAmountDialog(player, game, cfg, input);
+            return;
+        }
+
+        final long amount = parsed;
+        final long minimumBet = cfg.getLong("settings.minimum-bet");
+        final long maximumBet = cfg.getLong("settings.maximum-bet");
+
+        if (amount > maximumBet) {
+            Messages.CREATE_MAXIMUM_AMOUNT.send(player, "{MAX_BET}", TextUtil.numberFormat(maximumBet));
+            showCustomAmountDialog(player, game, cfg, input);
+            return;
+        }
+
+        if (amount < minimumBet) {
+            Messages.CREATE_MINIMUM_AMOUNT.send(player, "{MIN_BET}", TextUtil.numberFormat(minimumBet));
+            showCustomAmountDialog(player, game, cfg, input);
+            return;
+        }
+
+        game.setAmount(amount);
+        plugin.getInventoryManager().getGameBuilderGUI().openGameBuilderGUI(player, game);
     }
 
     private void setupCreateGame(Gui gui, Player player, CoinflipGame game, FileConfiguration cfg) {

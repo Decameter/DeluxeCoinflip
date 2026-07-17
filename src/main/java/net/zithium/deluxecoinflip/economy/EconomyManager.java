@@ -80,9 +80,6 @@ public class EconomyManager {
         }
     }
 
-    /**
-     * Whether any economy provider (static config-driven or Neon-registered) is currently usable.
-     */
     public boolean hasProviders() {
         return !economyProviders.isEmpty();
     }

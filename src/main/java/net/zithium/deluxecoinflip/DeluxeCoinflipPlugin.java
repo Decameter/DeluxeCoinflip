@@ -6,8 +6,6 @@
 package net.zithium.deluxecoinflip;
 
 import co.aikar.commands.PaperCommandManager;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.tcoded.folialib.FoliaLib;
 import com.tcoded.folialib.impl.PlatformScheduler;
 import net.zithium.deluxecoinflip.api.CustomStatManager;
@@ -19,12 +17,10 @@ import net.zithium.deluxecoinflip.config.ConfigType;
 import net.zithium.deluxecoinflip.config.Messages;
 import net.zithium.deluxecoinflip.economy.EconomyManager;
 import net.zithium.deluxecoinflip.economy.provider.EconomyProvider;
-import net.zithium.deluxecoinflip.game.CoinflipGame;
 import net.zithium.deluxecoinflip.game.GameManager;
 import net.zithium.deluxecoinflip.hook.DiscordHook;
 import net.zithium.deluxecoinflip.hook.NeonHook;
 import net.zithium.deluxecoinflip.hook.PlaceholderAPIHook;
-import net.zithium.deluxecoinflip.listener.PlayerChatListener;
 import net.zithium.deluxecoinflip.listener.game.GameQuitListener;
 import net.zithium.deluxecoinflip.menu.DupeProtection;
 import net.zithium.deluxecoinflip.menu.InventoryManager;
@@ -70,8 +66,6 @@ public class DeluxeCoinflipPlugin extends JavaPlugin implements DeluxeCoinflipAP
     private NeonHook neonHook;
     private CustomStatManager customStatManager;
 
-    private Cache<UUID, CoinflipGame> listenerCache;
-
     private GameShutdownProvider shutdownProvider;
 
     public static PlatformScheduler scheduler() {
@@ -101,8 +95,6 @@ public class DeluxeCoinflipPlugin extends JavaPlugin implements DeluxeCoinflipAP
         getLogger().log(Level.INFO, "");
 
         enableMetrics();
-
-        listenerCache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.SECONDS).maximumSize(500).build();
 
         // Register configurations
         configMap = new EnumMap<>(ConfigType.class);
@@ -170,7 +162,6 @@ public class DeluxeCoinflipPlugin extends JavaPlugin implements DeluxeCoinflipAP
                 })
         );
 
-        new PlayerChatListener(this);
         new GameQuitListener(this);
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
@@ -253,10 +244,6 @@ public class DeluxeCoinflipPlugin extends JavaPlugin implements DeluxeCoinflipAP
 
     public CustomStatManager getCustomStatManager() {
         return customStatManager;
-    }
-
-    public Cache<UUID, CoinflipGame> getListenerCache() {
-        return listenerCache;
     }
 
     public NamespacedKey getKey(String key) {

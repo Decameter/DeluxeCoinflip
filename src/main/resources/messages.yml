@@ -43,7 +43,6 @@ coinflip:
   cant-coinflip-self: "{PREFIX} &cYou cannot coinflip against yourself!"
   player-challenged-you: "{PREFIX} &e{OPPONENT} &faccepted your coinflip!"
 
-  enter-value: "{PREFIX} &aPlease enter a value between {MIN_BET} and {MAX_BET}. Type 'cancel' to cancel."
   chat-cancelled: "{PREFIX} &cCancelled!"
   invalid-currency: "{PREFIX} &cThat is not a valid currency type. Types: {CURRENCY_TYPES}"
   invalid-amount: "{PREFIX} &c{INPUT} is not a amount. Please try again."
