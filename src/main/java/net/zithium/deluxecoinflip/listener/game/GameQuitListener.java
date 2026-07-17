@@ -57,7 +57,11 @@ public record GameQuitListener(DeluxeCoinflipPlugin plugin) implements Listener 
         final long amount = game.getAmount();
         final String amountFormatted = String.format(Locale.US, "%,d", amount);
 
-        economyProvider.deposit(game.getOfflinePlayer(), amount);
+        final String reason = "Coinflip bet refunded (" + amountFormatted + " - " + quitter.getName() + " quit with an open listing)";
+        economyProvider.deposit(game.getOfflinePlayer(), amount, reason).exceptionally(ex -> {
+            plugin.getLogger().warning("[DeluxeCoinflip] Failed to refund " + quitter.getName() + ": " + ex.getMessage());
+            return null;
+        });
 
         if (quitter.isOnline()) {
             Messages.GAME_REFUNDED.send(

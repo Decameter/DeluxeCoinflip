@@ -22,6 +22,7 @@ import net.zithium.deluxecoinflip.economy.provider.EconomyProvider;
 import net.zithium.deluxecoinflip.game.CoinflipGame;
 import net.zithium.deluxecoinflip.game.GameManager;
 import net.zithium.deluxecoinflip.hook.DiscordHook;
+import net.zithium.deluxecoinflip.hook.NeonHook;
 import net.zithium.deluxecoinflip.hook.PlaceholderAPIHook;
 import net.zithium.deluxecoinflip.listener.PlayerChatListener;
 import net.zithium.deluxecoinflip.listener.game.GameQuitListener;
@@ -66,6 +67,7 @@ public class DeluxeCoinflipPlugin extends JavaPlugin implements DeluxeCoinflipAP
     private InventoryManager inventoryManager;
     private EconomyManager economyManager;
     private DiscordHook discordHook;
+    private NeonHook neonHook;
     private CustomStatManager customStatManager;
 
     private Cache<UUID, CoinflipGame> listenerCache;
@@ -112,6 +114,17 @@ public class DeluxeCoinflipPlugin extends JavaPlugin implements DeluxeCoinflipAP
         // Initialize economy manager early
         economyManager = new EconomyManager(this);
         economyManager.onEnable();
+
+        neonHook = new NeonHook(this);
+        neonHook.registerCurrencies();
+
+        if (!economyManager.hasProviders()) {
+            getLogger().severe("No valid economy providers were enabled. Plugin will now disable.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        getLogger().info("Found and using " + String.join(", ", economyManager.getEconomyProviders().keySet()) + " economy provider(s).");
 
         // Load storage
         storageManager = new StorageManager(this);
@@ -194,6 +207,13 @@ public class DeluxeCoinflipPlugin extends JavaPlugin implements DeluxeCoinflipAP
 
         inventoryManager.load(this);
         economyManager.onEnable();
+        neonHook.registerCurrencies();
+
+        if (!economyManager.hasProviders()) {
+            getLogger().severe("No valid economy providers were enabled. Plugin will now disable.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
     }
 
     private void registerConfig(ConfigType type) {

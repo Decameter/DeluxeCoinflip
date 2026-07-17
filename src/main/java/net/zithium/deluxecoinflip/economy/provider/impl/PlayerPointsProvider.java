@@ -10,6 +10,8 @@ import org.black_ixx.playerpoints.PlayerPoints;
 import org.black_ixx.playerpoints.PlayerPointsAPI;
 import org.bukkit.OfflinePlayer;
 
+import java.util.concurrent.CompletableFuture;
+
 public class PlayerPointsProvider extends EconomyProvider {
 
     private PlayerPointsAPI api;
@@ -24,17 +26,19 @@ public class PlayerPointsProvider extends EconomyProvider {
     }
 
     @Override
-    public double getBalance(OfflinePlayer player) {
-        return api.look(player.getUniqueId());
+    public CompletableFuture<Double> getBalance(OfflinePlayer player) {
+        return CompletableFuture.completedFuture((double) api.look(player.getUniqueId()));
     }
 
     @Override
-    public void withdraw(OfflinePlayer player, double amount) {
+    public CompletableFuture<Void> withdraw(OfflinePlayer player, double amount, String reason) {
         api.take(player.getUniqueId(), (int) amount);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void deposit(OfflinePlayer player, double amount) {
+    public CompletableFuture<Void> deposit(OfflinePlayer player, double amount, String reason) {
         api.give(player.getUniqueId(), (int) amount);
+        return CompletableFuture.completedFuture(null);
     }
 }

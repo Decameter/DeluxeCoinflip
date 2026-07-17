@@ -10,6 +10,8 @@ import me.mraxetv.beasttokens.api.handlers.BTTokensManager;
 import net.zithium.deluxecoinflip.economy.provider.EconomyProvider;
 import org.bukkit.OfflinePlayer;
 
+import java.util.concurrent.CompletableFuture;
+
 public class BeastTokensProvider extends EconomyProvider {
 
     private BTTokensManager tokensManager;
@@ -24,29 +26,28 @@ public class BeastTokensProvider extends EconomyProvider {
     }
 
     @Override
-    public double getBalance(OfflinePlayer player) {
-        if (player.isOnline()) {
-            return tokensManager.getTokens(player.getPlayer());
-        } else {
-            return tokensManager.getTokens(player);
-        }
+    public CompletableFuture<Double> getBalance(OfflinePlayer player) {
+        double balance = player.isOnline() ? tokensManager.getTokens(player.getPlayer()) : tokensManager.getTokens(player);
+        return CompletableFuture.completedFuture(balance);
     }
 
     @Override
-    public void withdraw(OfflinePlayer player, double amount) {
+    public CompletableFuture<Void> withdraw(OfflinePlayer player, double amount, String reason) {
         if (player.isOnline()) {
             tokensManager.removeTokens(player.getPlayer(), amount);
         } else {
             tokensManager.removeTokens(player, amount);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void deposit(OfflinePlayer player, double amount) {
+    public CompletableFuture<Void> deposit(OfflinePlayer player, double amount, String reason) {
         if (player.isOnline()) {
             tokensManager.addTokens(player.getPlayer(), amount);
         } else {
             tokensManager.addTokens(player, amount);
         }
+        return CompletableFuture.completedFuture(null);
     }
 }

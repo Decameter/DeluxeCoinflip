@@ -136,7 +136,8 @@ public class CoinflipCommand extends BaseCommand {
         if (gameManager.getCoinflipGames().containsKey(uuid)) {
             final CoinflipGame game = gameManager.getCoinflipGames().get(uuid);
 
-            economyManager.getEconomyProvider(game.getProvider()).deposit(player, game.getAmount());
+            economyManager.getEconomyProvider(game.getProvider()).deposit(player, game.getAmount(),
+                    "Coinflip bet refunded (" + TextUtil.numberFormat(game.getAmount()) + " - game deleted by " + player.getName() + ")");
             gameManager.removeCoinflipGame(uuid);
             Messages.DELETED_GAME.send(player);
         } else {
@@ -202,16 +203,22 @@ public class CoinflipCommand extends BaseCommand {
             return;
         }
 
-        if (amount <= provider.getBalance(player)) {
-            CoinflipGame coinflipGame = new CoinflipGame(player.getUniqueId(), provider.getIdentifier().toUpperCase(), amount);
+        final EconomyProvider finalProvider = provider;
+        final CoinflipGame coinflipGame = new CoinflipGame(player.getUniqueId(), finalProvider.getIdentifier().toUpperCase(), amount);
 
-            final CoinflipCreatedEvent event = new CoinflipCreatedEvent(player, coinflipGame);
-            Bukkit.getPluginManager().callEvent(event);
-            if (event.isCancelled()) {
+        final CoinflipCreatedEvent event = new CoinflipCreatedEvent(player, coinflipGame);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
+
+        final String withdrawReason = "Coinflip bet placed (" + TextUtil.numberFormat(amount) + " " + finalProvider.getDisplayName() + ")";
+        finalProvider.withdrawIfHas(player, (double) amount, withdrawReason).thenAccept(success -> DeluxeCoinflipPlugin.scheduler().runAtEntity(player, task -> {
+            if (!success) {
+                Messages.INSUFFICIENT_FUNDS.send(player);
                 return;
             }
 
-            provider.withdraw(player, (double) amount);
             gameManager.addCoinflipGame(player.getUniqueId(), coinflipGame);
 
             if (config.getBoolean("settings.broadcast-coinflip-creation")) {
@@ -223,7 +230,7 @@ public class CoinflipCommand extends BaseCommand {
                         if (playerData.isDisplayBroadcastMessages()) {
                             Messages.COINFLIP_CREATED_BROADCAST.send(onlinePlayer,
                                 "{PLAYER}", player.getName(),
-                                "{CURRENCY}", provider.getDisplayName(),
+                                "{CURRENCY}", finalProvider.getDisplayName(),
                                 "{AMOUNT}", TextUtil.numberFormat(amount));
                         }
                     }
@@ -231,11 +238,9 @@ public class CoinflipCommand extends BaseCommand {
             }
 
             Messages.CREATED_GAME.send(player,
-                "{CURRENCY}", provider.getDisplayName(),
+                "{CURRENCY}", finalProvider.getDisplayName(),
                 "{AMOUNT}", TextUtil.numberFormat(amount));
-        } else {
-            Messages.INSUFFICIENT_FUNDS.send(player);
-        }
+        }));
     }
 
     private EconomyProvider getProviderByName(String name) {

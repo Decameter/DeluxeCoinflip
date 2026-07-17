@@ -186,30 +186,33 @@ public class GamesGUI {
                         return;
                     }
 
-                    if (selectedProvider.getBalance(player) < selectedGame.getAmount()) {
-                        ItemStack previousItem = events.getCurrentItem();
+                    String acceptReason = "Coinflip bet placed (" + NumberFormat.getNumberInstance(Locale.US).format(selectedGame.getAmount())
+                            + " vs " + creatorOnline.getName() + ")";
+                    selectedProvider.withdrawIfHas(player, selectedGame.getAmount(), acceptReason).thenAccept(success -> scheduler.runAtEntity(player, checkTask -> {
+                        if (!success) {
+                            ItemStack previousItem = events.getCurrentItem();
 
-                        playConfiguredSound(player);
+                            playConfiguredSound(player);
 
-                        ConfigurationSection noFundsSection = config.getConfigurationSection("games-gui.error-no-funds");
-                        if (noFundsSection != null && events.getClickedInventory() != null) {
-                            events.getClickedInventory().setItem(events.getSlot(), ItemStackBuilder.getItemStack(noFundsSection).build());
-                            scheduler.runLater(task -> {
-                                if (events.getClickedInventory() != null) {
-                                    events.getClickedInventory().setItem(events.getSlot(), previousItem);
-                                }
-                            }, 45L);
+                            ConfigurationSection noFundsSection = config.getConfigurationSection("games-gui.error-no-funds");
+                            if (noFundsSection != null && events.getClickedInventory() != null) {
+                                events.getClickedInventory().setItem(events.getSlot(), ItemStackBuilder.getItemStack(noFundsSection).build());
+                                scheduler.runLater(task -> {
+                                    if (events.getClickedInventory() != null) {
+                                        events.getClickedInventory().setItem(events.getSlot(), previousItem);
+                                    }
+                                }, 45L);
+                            }
+
+                            Messages.INSUFFICIENT_FUNDS.send(player);
+                            return;
                         }
 
-                        Messages.INSUFFICIENT_FUNDS.send(player);
-                        return;
-                    }
+                        gameManager.removeCoinflipGame(creatorOnline.getUniqueId());
 
-                    selectedProvider.withdraw(player, selectedGame.getAmount());
-                    gameManager.removeCoinflipGame(creatorOnline.getUniqueId());
-
-                    scheduler.runAtEntity(player, task -> events.getWhoClicked().closeInventory());
-                    plugin.getInventoryManager().getCoinflipGUI().startGame(creatorOnline, player, selectedGame);
+                        scheduler.runAtEntity(player, task -> events.getWhoClicked().closeInventory());
+                        plugin.getInventoryManager().getCoinflipGUI().startGame(creatorOnline, player, selectedGame);
+                    }));
                 });
 
                 gui.addItem(gameItem);

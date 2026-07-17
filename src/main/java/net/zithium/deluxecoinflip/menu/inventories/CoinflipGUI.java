@@ -259,8 +259,16 @@ public class CoinflipGUI {
         final UUID finalWinnerId = winnerId;
         final UUID finalLoserId = loserId;
 
+        final String depositReasonLoserName = loser.getName() != null ? loser.getName() : loser.getUniqueId().toString();
+        final String depositReason = forfeit
+                ? "Coinflip winnings (" + TextUtil.numberFormat(providedWinAmount) + " - " + depositReasonLoserName + " forfeited)"
+                : "Coinflip winnings (" + TextUtil.numberFormat(providedWinAmount) + " vs " + depositReasonLoserName + ")";
+
         scheduler.runNextTick(innerTask -> {
-            provider.deposit(winner, providedWinAmount);
+            provider.deposit(winner, providedWinAmount, depositReason).exceptionally(ex -> {
+                plugin.getLogger().log(Level.SEVERE, "Failed to deposit winnings for " + winner.getName(), ex);
+                return null;
+            });
             new CoinflipCompletedEvent(finalWinnerId, finalLoserId, winner, loser, providedWinAmount, forfeit).callEvent();
             plugin.getGameManager().removeCoinflipGame(game.getPlayerUUID());
             plugin.getActiveGamesCache().unregister(game);

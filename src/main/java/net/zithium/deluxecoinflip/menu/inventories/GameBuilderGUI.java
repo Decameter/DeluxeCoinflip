@@ -215,38 +215,40 @@ public class GameBuilderGUI {
                 return;
             }
 
-            if (amount > (long) provider.getBalance(player)) {
-                handleError(player, event, cfg, "gamebuilder-gui.error-no-funds");
-                return;
-            }
-
-            suppressReturn.add(player.getUniqueId());
-            scheduler.runAtEntity(player, task -> gui.close(player));
-
             CoinflipCreatedEvent createdEvent = new CoinflipCreatedEvent(player, game);
             Bukkit.getPluginManager().callEvent(createdEvent);
             if (createdEvent.isCancelled()) {
                 return;
             }
 
-            provider.withdraw(player, amount);
-            plugin.getGameManager().addCoinflipGame(player.getUniqueId(), game.clone());
+            String betReason = "Coinflip bet placed (" + NumberFormat.getNumberInstance(Locale.US).format(amount) + " " + provider.getDisplayName() + ")";
+            provider.withdrawIfHas(player, amount, betReason).thenAccept(success -> scheduler.runAtEntity(player, checkTask -> {
+                if (!success) {
+                    handleError(player, event, cfg, "gamebuilder-gui.error-no-funds");
+                    return;
+                }
 
-            String formatted = NumberFormat.getNumberInstance(Locale.US).format(amount);
+                suppressReturn.add(player.getUniqueId());
+                scheduler.runAtEntity(player, task -> gui.close(player));
 
-            if (cfg.getBoolean("settings.broadcast-coinflip-creation")) {
-                Messages.COINFLIP_CREATED_BROADCAST.broadcast(
-                        "{PLAYER}", player.getName(),
-                        "{CURRENCY}", provider.getDisplayName(),
-                        "{AMOUNT}", formatted
+                plugin.getGameManager().addCoinflipGame(player.getUniqueId(), game.clone());
+
+                String formatted = NumberFormat.getNumberInstance(Locale.US).format(amount);
+
+                if (cfg.getBoolean("settings.broadcast-coinflip-creation")) {
+                    Messages.COINFLIP_CREATED_BROADCAST.broadcast(
+                            "{PLAYER}", player.getName(),
+                            "{CURRENCY}", provider.getDisplayName(),
+                            "{AMOUNT}", formatted
+                    );
+                }
+
+                Messages.CREATED_GAME.send(
+                        player,
+                        "{AMOUNT}", formatted,
+                        "{CURRENCY}", provider.getDisplayName()
                 );
-            }
-
-            Messages.CREATED_GAME.send(
-                    player,
-                    "{AMOUNT}", formatted,
-                    "{CURRENCY}", provider.getDisplayName()
-            );
+            }));
         });
 
         gui.setItem(section.getInt("slot"), item);

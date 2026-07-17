@@ -123,7 +123,13 @@ public record DefaultGameShutdownProvider(DeluxeCoinflipPlugin plugin) implement
         }
 
         final OfflinePlayer offline = plugin.getServer().getOfflinePlayer(playerId);
-        provider.deposit(offline, amount);
+        final String reason = "Coinflip bet refunded (" + amountFormatted + " - server shutdown)";
+        try {
+            // Shutdown is synchronous, so block until the refund is confirmed before the JVM exits.
+            provider.deposit(offline, amount, reason).join();
+        } catch (Exception ex) {
+            plugin.getLogger().warning("[DeluxeCoinflip] Failed to refund " + playerId + " on shutdown: " + ex.getMessage());
+        }
     }
 
     private void removeListingAndStorage(UUID creatorId) {

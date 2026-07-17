@@ -11,6 +11,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 
 import java.util.OptionalLong;
+import java.util.concurrent.CompletableFuture;
 
 public class TokenManagerProvider extends EconomyProvider {
 
@@ -26,19 +27,20 @@ public class TokenManagerProvider extends EconomyProvider {
     }
 
     @Override
-    public double getBalance(OfflinePlayer player) {
+    public CompletableFuture<Double> getBalance(OfflinePlayer player) {
         OptionalLong tokens = tokenManager.getTokens(player.getPlayer());
-        if (tokens.isEmpty()) return 0.0;
-        return (double) tokens.getAsLong();
+        return CompletableFuture.completedFuture(tokens.isEmpty() ? 0.0 : (double) tokens.getAsLong());
     }
 
     @Override
-    public void withdraw(OfflinePlayer player, double amount) {
+    public CompletableFuture<Void> withdraw(OfflinePlayer player, double amount, String reason) {
         tokenManager.removeTokens(player.getPlayer(), (long) amount);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void deposit(OfflinePlayer player, double amount) {
+    public CompletableFuture<Void> deposit(OfflinePlayer player, double amount, String reason) {
         tokenManager.addTokens(player.getPlayer(), (long) amount);
+        return CompletableFuture.completedFuture(null);
     }
 }

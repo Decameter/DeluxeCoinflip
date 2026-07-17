@@ -13,6 +13,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.ConsoleCommandSender;
 
+import java.util.concurrent.CompletableFuture;
+
 public class CustomCurrencyProvider extends EconomyProvider {
 
     private final DeluxeCoinflipPlugin plugin;
@@ -46,37 +48,44 @@ public class CustomCurrencyProvider extends EconomyProvider {
     }
 
     @Override
-    public double getBalance(OfflinePlayer player) {
+    public CompletableFuture<Double> getBalance(OfflinePlayer player) {
         String balanceString = PlaceholderAPI.setPlaceholders(player, rawBalancePlaceholder);
         try {
-            return Double.parseDouble(balanceString);
+            return CompletableFuture.completedFuture(Double.parseDouble(balanceString));
         } catch (NumberFormatException e) {
             plugin.getLogger().warning("Error fetching balance for " + getSafePlayerName(player) + ": " + e.getMessage());
-            return 0; // Returning zero if there's an issue with fetching placeholder. Should prevent the game from proceeding.
+            return CompletableFuture.completedFuture(0.0); // Returning zero if there's an issue with fetching placeholder. Should prevent the game from proceeding.
         }
     }
 
     @Override
-    public void withdraw(OfflinePlayer player, double amount) {
+    public CompletableFuture<Void> withdraw(OfflinePlayer player, double amount, String reason) {
         String formattedAmount = (amount % 1 == 0) ? String.valueOf((long) amount) : String.valueOf(amount);
         String command = withdrawCommandTemplate
                 .replace("{player}", getNameOrUuid(player))
-                .replace("{amount}", formattedAmount);
-        executeCommand(command);
+                .replace("{amount}", formattedAmount)
+                .replace("{reason}", reason);
+        return executeCommand(command);
     }
 
     @Override
-    public void deposit(OfflinePlayer player, double amount) {
+    public CompletableFuture<Void> deposit(OfflinePlayer player, double amount, String reason) {
         String formattedAmount = (amount % 1 == 0) ? String.valueOf((long) amount) : String.valueOf(amount);
         String command = depositCommandTemplate
                 .replace("{player}", getNameOrUuid(player))
-                .replace("{amount}", formattedAmount);
-        executeCommand(command);
+                .replace("{amount}", formattedAmount)
+                .replace("{reason}", reason);
+        return executeCommand(command);
     }
 
-    private void executeCommand(String command) {
+    private CompletableFuture<Void> executeCommand(String command) {
         ConsoleCommandSender console = Bukkit.getServer().getConsoleSender();
-        scheduler.runNextTick(task -> Bukkit.dispatchCommand(console, command));
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        scheduler.runNextTick(task -> {
+            Bukkit.dispatchCommand(console, command);
+            future.complete(null);
+        });
+        return future;
     }
 
     private static String getNameOrUuid(OfflinePlayer player) {

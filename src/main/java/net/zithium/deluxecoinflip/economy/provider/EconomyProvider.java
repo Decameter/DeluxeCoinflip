@@ -7,6 +7,8 @@ package net.zithium.deluxecoinflip.economy.provider;
 
 import org.bukkit.OfflinePlayer;
 
+import java.util.concurrent.CompletableFuture;
+
 public abstract class EconomyProvider {
 
     private final String identifier;
@@ -19,11 +21,21 @@ public abstract class EconomyProvider {
 
     public abstract void onEnable();
 
-    public abstract double getBalance(OfflinePlayer player);
+    public abstract CompletableFuture<Double> getBalance(OfflinePlayer player);
 
-    public abstract void withdraw(OfflinePlayer player, double amount);
+    public abstract CompletableFuture<Void> withdraw(OfflinePlayer player, double amount, String reason);
 
-    public abstract void deposit(OfflinePlayer player, double amount);
+    public abstract CompletableFuture<Void> deposit(OfflinePlayer player, double amount, String reason);
+
+    public CompletableFuture<Boolean> withdrawIfHas(OfflinePlayer player, double amount, String reason) {
+        return getBalance(player).thenCompose(balance -> {
+            if (balance < amount) {
+                return CompletableFuture.completedFuture(false);
+            }
+
+            return withdraw(player, amount, reason).thenApply(ignored -> true);
+        });
+    }
 
     public String getIdentifier() {
         return identifier;

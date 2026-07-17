@@ -9,7 +9,6 @@ import net.zithium.deluxecoinflip.DeluxeCoinflipPlugin;
 import net.zithium.deluxecoinflip.config.ConfigType;
 import net.zithium.deluxecoinflip.economy.provider.EconomyProvider;
 import net.zithium.deluxecoinflip.economy.provider.impl.*;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.Collections;
@@ -39,8 +38,7 @@ public class EconomyManager {
         Logger logger = plugin.getLogger();
 
         if (section == null) {
-            logger.severe("There are no enabled providers set in the config. Plugin will now disable.");
-            Bukkit.getPluginManager().disablePlugin(plugin);
+            logger.warning("There is no 'settings.providers' section in the config.");
             return;
         }
 
@@ -80,14 +78,13 @@ public class EconomyManager {
             provider.onEnable();
             logger.info("Enabled economy provider '" + key + "'.");
         }
+    }
 
-        if (economyProviders.isEmpty()) {
-            logger.severe("No valid economy providers were enabled. Plugin will now disable.");
-            Bukkit.getPluginManager().disablePlugin(plugin);
-            return;
-        }
-
-        logger.info("Found and using " + String.join(", ", economyProviders.keySet()) + " economy provider(s).");
+    /**
+     * Whether any economy provider (static config-driven or Neon-registered) is currently usable.
+     */
+    public boolean hasProviders() {
+        return !economyProviders.isEmpty();
     }
 
 

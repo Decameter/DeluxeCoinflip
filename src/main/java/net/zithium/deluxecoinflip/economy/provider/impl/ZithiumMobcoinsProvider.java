@@ -11,6 +11,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public class ZithiumMobcoinsProvider extends EconomyProvider {
 
@@ -26,18 +27,20 @@ public class ZithiumMobcoinsProvider extends EconomyProvider {
     }
 
     @Override
-    public double getBalance(OfflinePlayer player) {
+    public CompletableFuture<Double> getBalance(OfflinePlayer player) {
         Optional<Long> balanceOptional = api.getUserBalance(player.getUniqueId());
-        return balanceOptional.orElse(0L).doubleValue();
+        return CompletableFuture.completedFuture(balanceOptional.orElse(0L).doubleValue());
     }
 
     @Override
-    public void withdraw(OfflinePlayer player, double amount) {
+    public CompletableFuture<Void> withdraw(OfflinePlayer player, double amount, String reason) {
         api.subtractCoins(player.getUniqueId(), (int) amount);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void deposit(OfflinePlayer player, double amount) {
+    public CompletableFuture<Void> deposit(OfflinePlayer player, double amount, String reason) {
         api.addCoins(player.getUniqueId(), (int) amount);
+        return CompletableFuture.completedFuture(null);
     }
 }

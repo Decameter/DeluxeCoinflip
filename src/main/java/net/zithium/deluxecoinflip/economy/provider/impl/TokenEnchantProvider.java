@@ -10,6 +10,8 @@ import net.zithium.deluxecoinflip.economy.provider.EconomyProvider;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 
+import java.util.concurrent.CompletableFuture;
+
 public class TokenEnchantProvider extends EconomyProvider {
 
     private ITokenEnchant tokenEnchantAPI;
@@ -24,17 +26,19 @@ public class TokenEnchantProvider extends EconomyProvider {
     }
 
     @Override
-    public double getBalance(OfflinePlayer player) {
-        return tokenEnchantAPI.getTokens(player);
+    public CompletableFuture<Double> getBalance(OfflinePlayer player) {
+        return CompletableFuture.completedFuture(tokenEnchantAPI.getTokens(player));
     }
 
     @Override
-    public void withdraw(OfflinePlayer player, double amount) {
+    public CompletableFuture<Void> withdraw(OfflinePlayer player, double amount, String reason) {
         tokenEnchantAPI.removeTokens(player, amount);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void deposit(OfflinePlayer player, double amount) {
+    public CompletableFuture<Void> deposit(OfflinePlayer player, double amount, String reason) {
         tokenEnchantAPI.addTokens(player, amount);
+        return CompletableFuture.completedFuture(null);
     }
 }
