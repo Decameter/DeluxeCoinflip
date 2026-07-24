@@ -204,7 +204,7 @@ public class GamesGUI {
                                 }, 45L);
                             }
 
-                            Messages.INSUFFICIENT_FUNDS.send(player);
+                            Messages.INSUFFICIENT_FUNDS.sendCurrency(player, selectedProvider.getIdentifier());
                             return;
                         }
 

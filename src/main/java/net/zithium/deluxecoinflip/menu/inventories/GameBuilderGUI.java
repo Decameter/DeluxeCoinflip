@@ -254,13 +254,13 @@ public class GameBuilderGUI {
         final long maximumBet = cfg.getLong("settings.maximum-bet");
 
         if (amount > maximumBet) {
-            Messages.CREATE_MAXIMUM_AMOUNT.send(player, "{MAX_BET}", TextUtil.numberFormat(maximumBet));
+            Messages.CREATE_MAXIMUM_AMOUNT.sendCurrency(player, game.getProvider(), "{MAX_BET}", TextUtil.numberFormat(maximumBet));
             showCustomAmountDialog(player, game, cfg, input);
             return;
         }
 
         if (amount < minimumBet) {
-            Messages.CREATE_MINIMUM_AMOUNT.send(player, "{MIN_BET}", TextUtil.numberFormat(minimumBet));
+            Messages.CREATE_MINIMUM_AMOUNT.sendCurrency(player, game.getProvider(), "{MIN_BET}", TextUtil.numberFormat(minimumBet));
             showCustomAmountDialog(player, game, cfg, input);
             return;
         }
@@ -313,15 +313,16 @@ public class GameBuilderGUI {
                 String formatted = NumberFormat.getNumberInstance(Locale.US).format(amount);
 
                 if (cfg.getBoolean("settings.broadcast-coinflip-creation")) {
-                    Messages.COINFLIP_CREATED_BROADCAST.broadcast(
+                    Messages.COINFLIP_CREATED_BROADCAST.broadcastCurrency(
+                            provider.getIdentifier(),
                             "{PLAYER}", player.getName(),
                             "{CURRENCY}", provider.getDisplayName(),
                             "{AMOUNT}", formatted
                     );
                 }
 
-                Messages.CREATED_GAME.send(
-                        player,
+                Messages.CREATED_GAME.sendCurrency(
+                        player, provider.getIdentifier(),
                         "{AMOUNT}", formatted,
                         "{CURRENCY}", provider.getDisplayName()
                 );

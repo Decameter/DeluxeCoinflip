@@ -64,8 +64,8 @@ public record GameQuitListener(DeluxeCoinflipPlugin plugin) implements Listener 
         });
 
         if (quitter.isOnline()) {
-            Messages.GAME_REFUNDED.send(
-                  quitter,
+            Messages.GAME_REFUNDED.sendCurrency(
+                  quitter, economyProvider.getIdentifier(),
                   "{AMOUNT}", amountFormatted,
                   "{CURRENCY}", game.getProvider()
             );

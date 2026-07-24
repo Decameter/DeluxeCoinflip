@@ -289,24 +289,24 @@ public class CoinflipGUI {
             String loserName = loser.getName() != null ? loser.getName() : "Unknown";
 
             if (winnerOnline != null) {
-                Messages.GAME_FORFEIT.send(winnerOnline, replacePlaceholders(
+                Messages.GAME_FORFEIT.sendCurrency(winnerOnline, provider.getIdentifier(), replacePlaceholders(
                         String.valueOf(taxRate), taxedFormatted, winner.getName(), loserName,
                         providerName, winAmountFormatted));
             }
         } else {
             if (winnerOnline != null) {
-                Messages.GAME_SUMMARY_WIN.send(winnerOnline, replacePlaceholders(
+                Messages.GAME_SUMMARY_WIN.sendCurrency(winnerOnline, provider.getIdentifier(), replacePlaceholders(
                         String.valueOf(taxRate), taxedFormatted, winner.getName(), loser.getName(),
                         providerName, winAmountFormatted));
             }
 
             if (loserOnline != null) {
-                Messages.GAME_SUMMARY_LOSS.send(loserOnline, replacePlaceholders(
+                Messages.GAME_SUMMARY_LOSS.sendCurrency(loserOnline, provider.getIdentifier(), replacePlaceholders(
                         String.valueOf(taxRate), taxedFormatted, winner.getName(), loser.getName(),
                         providerName, winAmountFormatted));
             }
 
-            broadcastWinningMessage(finalWinAmount, taxed, winner.getName(), loser.getName(), providerName);
+            broadcastWinningMessage(finalWinAmount, taxed, winner.getName(), loser.getName(), providerName, provider.getIdentifier());
         }
 
         if (config.getBoolean("discord.webhook.enabled", false) || config.getBoolean("discord.bot.enabled", false)) {
@@ -340,12 +340,12 @@ public class CoinflipGUI {
         }
     }
 
-    private void broadcastWinningMessage(long winAmount, long tax, String winner, String loser, String currency) {
+    private void broadcastWinningMessage(long winAmount, long tax, String winner, String loser, String currency, String currencyIdentifier) {
         if (winAmount >= minimumBroadcastWinnings) {
             for (Player player : Bukkit.getServer().getOnlinePlayers()) {
                 plugin.getStorageManager().getPlayer(player.getUniqueId()).ifPresent(playerData -> {
                     if (playerData.isDisplayBroadcastMessages()) {
-                        Messages.COINFLIP_BROADCAST.send(player, replacePlaceholders(
+                        Messages.COINFLIP_BROADCAST.sendCurrency(player, currencyIdentifier, replacePlaceholders(
                                 String.valueOf(taxRate),
                                 TextUtil.numberFormat(tax),
                                 winner,

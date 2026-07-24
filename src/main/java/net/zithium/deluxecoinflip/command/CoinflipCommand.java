@@ -139,7 +139,7 @@ public class CoinflipCommand extends BaseCommand {
             economyManager.getEconomyProvider(game.getProvider()).deposit(player, game.getAmount(),
                     "Coinflip bet refunded (" + TextUtil.numberFormat(game.getAmount()) + " - game deleted by " + player.getName() + ")");
             gameManager.removeCoinflipGame(uuid);
-            Messages.DELETED_GAME.send(player);
+            Messages.DELETED_GAME.sendCurrency(player, game.getProvider());
         } else {
             Messages.GAME_NOT_FOUND.send(player);
         }
@@ -215,7 +215,7 @@ public class CoinflipCommand extends BaseCommand {
         final String withdrawReason = "Coinflip bet placed (" + TextUtil.numberFormat(amount) + " " + finalProvider.getDisplayName() + ")";
         finalProvider.withdrawIfHas(player, (double) amount, withdrawReason).thenAccept(success -> DeluxeCoinflipPlugin.scheduler().runAtEntity(player, task -> {
             if (!success) {
-                Messages.INSUFFICIENT_FUNDS.send(player);
+                Messages.INSUFFICIENT_FUNDS.sendCurrency(player, finalProvider.getIdentifier());
                 return;
             }
 
@@ -228,7 +228,7 @@ public class CoinflipCommand extends BaseCommand {
                     if (playerDataOptional.isPresent()) {
                         PlayerData playerData = playerDataOptional.get();
                         if (playerData.isDisplayBroadcastMessages()) {
-                            Messages.COINFLIP_CREATED_BROADCAST.send(onlinePlayer,
+                            Messages.COINFLIP_CREATED_BROADCAST.sendCurrency(onlinePlayer, finalProvider.getIdentifier(),
                                 "{PLAYER}", player.getName(),
                                 "{CURRENCY}", finalProvider.getDisplayName(),
                                 "{AMOUNT}", TextUtil.numberFormat(amount));
@@ -237,7 +237,7 @@ public class CoinflipCommand extends BaseCommand {
                 });
             }
 
-            Messages.CREATED_GAME.send(player,
+            Messages.CREATED_GAME.sendCurrency(player, finalProvider.getIdentifier(),
                 "{CURRENCY}", finalProvider.getDisplayName(),
                 "{AMOUNT}", TextUtil.numberFormat(amount));
         }));

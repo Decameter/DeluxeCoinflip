@@ -11,6 +11,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.List;
+import java.util.Locale;
 
 public enum Messages {
 
@@ -57,25 +58,49 @@ public enum Messages {
     }
 
     public void broadcast(Object... replacements) {
+        broadcastCurrency(null, replacements);
+    }
+
+    /**
+     * Broadcasts the message to all online players, using the currency-specific
+     * override for {@code currencyIdentifier} if one is configured (see {@link #sendCurrency}).
+     */
+    public void broadcastCurrency(String currencyIdentifier, Object... replacements) {
         if (config == null) {
             return;
         }
 
-        Bukkit.getOnlinePlayers().forEach(player -> send(player, replacements));
+        Bukkit.getOnlinePlayers().forEach(player -> sendCurrency(player, currencyIdentifier, replacements));
     }
 
     public void send(CommandSender receiver, Object... replacements) {
+        sendCurrency(receiver, null, replacements);
+    }
+
+    /**
+     * Sends the message to the receiver, preferring a currency-specific override if one exists.
+     * <p>
+     * A message at path {@code x.y} can be overridden for a currency by adding a sibling
+     * section {@code x.y_overrides.<CURRENCY_IDENTIFIER>} in messages.yml, where
+     * {@code CURRENCY_IDENTIFIER} matches the economy provider's identifier (e.g. {@code VAULT},
+     * {@code NEON_GEMS}, {@code CUSTOM_CURRENCY}).
+     *
+     * @param currencyIdentifier the economy provider identifier, or null/empty for no override lookup
+     */
+    public void sendCurrency(CommandSender receiver, String currencyIdentifier, Object... replacements) {
         if (config == null || receiver == null) {
             return;
         }
 
-        Object value = config.get(this.path);
+        String resolvedPath = resolvePath(currencyIdentifier);
+
+        Object value = config.get(resolvedPath);
 
         String message;
         if (value == null) {
-            message = "DeluxeCoinflip: message not found (" + this.path + ")";
+            message = "DeluxeCoinflip: message not found (" + resolvedPath + ")";
         } else if (value instanceof List) {
-            List<String> lines = config.getStringList(this.path);
+            List<String> lines = config.getStringList(resolvedPath);
             message = TextUtil.fromList(lines);
         } else {
             message = String.valueOf(value);
@@ -91,6 +116,24 @@ public enum Messages {
         }
 
         receiver.sendMessage(colored);
+    }
+
+    /**
+     * Resolves the effective config path for this message, given an optional currency
+     * identifier. Returns the currency override path if it exists in the config, otherwise
+     * falls back to the default path.
+     */
+    private String resolvePath(String currencyIdentifier) {
+        if (config == null || currencyIdentifier == null || currencyIdentifier.isEmpty()) {
+            return this.path;
+        }
+
+        int lastDot = this.path.lastIndexOf('.');
+        String parent = lastDot >= 0 ? this.path.substring(0, lastDot + 1) : "";
+        String key = lastDot >= 0 ? this.path.substring(lastDot + 1) : this.path;
+
+        String overridePath = parent + key + "_overrides." + currencyIdentifier.toUpperCase(Locale.ROOT);
+        return config.contains(overridePath) ? overridePath : this.path;
     }
 
     private String replace(String message, Object... replacements) {

@@ -4,6 +4,18 @@
 #
 # Developer API
 #   https://github.com/itzsave/DeluxeCoinflipAPI
+#
+# Per-currency message overrides
+#   Any message below can be overridden for a specific currency by adding a sibling
+#   "<key>_overrides" section, keyed by the currency's provider identifier (the same
+#   identifier used under settings.providers in config.yml, e.g. VAULT, CUSTOM_CURRENCY,
+#   NEON_GEMS). If no override is found for the currency in use, the default message is used.
+#
+#   Example:
+#     coinflip:
+#       created_coinflip: "{PREFIX} &fCreated Coinflip game for &e{AMOUNT} &7({CURRENCY})&f!"
+#       created_coinflip_overrides:
+#         NEON_GEMS: "{PREFIX} &dCreated a Gem Coinflip for &e{AMOUNT} Gems&d!"
 
 general:
   prefix: "<dark_gray>[<gradient:gold:yellow:gold><b>DeluxeCoinflip</gradient><dark_gray>]"
