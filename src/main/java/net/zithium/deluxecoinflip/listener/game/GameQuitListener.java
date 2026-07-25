@@ -10,6 +10,7 @@ import net.zithium.deluxecoinflip.config.Messages;
 import net.zithium.deluxecoinflip.economy.EconomyManager;
 import net.zithium.deluxecoinflip.economy.provider.EconomyProvider;
 import net.zithium.deluxecoinflip.game.CoinflipGame;
+import net.zithium.deluxecoinflip.utility.TextUtil;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -67,6 +68,7 @@ public record GameQuitListener(DeluxeCoinflipPlugin plugin) implements Listener 
             Messages.GAME_REFUNDED.sendCurrency(
                   quitter, economyProvider.getIdentifier(),
                   "{AMOUNT}", amountFormatted,
+                  "{AMOUNT_SHORT}", TextUtil.format(amount),
                   "{CURRENCY}", game.getProvider()
             );
         }

@@ -110,7 +110,7 @@ public enum Messages {
             return;
         }
 
-        String colored = TextUtil.color(replace(message, replacements));
+        String colored = TextUtil.color(replace(message, currencyIdentifier, replacements));
         if (colored == null || colored.isEmpty()) {
             return;
         }
@@ -136,7 +136,7 @@ public enum Messages {
         return config.contains(overridePath) ? overridePath : this.path;
     }
 
-    private String replace(String message, Object... replacements) {
+    private String replace(String message, String currencyIdentifier, Object... replacements) {
         if (message == null) {
             return "";
         }
@@ -152,7 +152,7 @@ public enum Messages {
         }
 
         if (config != null) {
-            String prefix = config.getString(PREFIX.getPath());
+            String prefix = config.getString(PREFIX.resolvePath(currencyIdentifier));
             message = message.replace("{PREFIX}", (prefix != null && !prefix.isEmpty()) ? prefix : "");
         }
 

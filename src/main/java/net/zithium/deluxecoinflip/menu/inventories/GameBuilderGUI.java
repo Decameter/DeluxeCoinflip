@@ -209,7 +209,9 @@ public class GameBuilderGUI {
         List<String> bodyLines = cfg.getStringList("gamebuilder-gui.custom-amount.dialog.body");
         String bodyText = String.join("\n", bodyLines)
                 .replace("{MIN_BET}", TextUtil.numberFormat(minimumBet))
-                .replace("{MAX_BET}", TextUtil.numberFormat(maximumBet));
+                .replace("{MAX_BET}", TextUtil.numberFormat(maximumBet))
+                .replace("{MIN_BET_SHORT}", TextUtil.format(minimumBet))
+                .replace("{MAX_BET_SHORT}", TextUtil.format(maximumBet));
 
         Component body = Component.text(TextUtil.color(bodyText));
 
@@ -254,13 +256,17 @@ public class GameBuilderGUI {
         final long maximumBet = cfg.getLong("settings.maximum-bet");
 
         if (amount > maximumBet) {
-            Messages.CREATE_MAXIMUM_AMOUNT.sendCurrency(player, game.getProvider(), "{MAX_BET}", TextUtil.numberFormat(maximumBet));
+            Messages.CREATE_MAXIMUM_AMOUNT.sendCurrency(player, game.getProvider(),
+                    "{MAX_BET}", TextUtil.numberFormat(maximumBet),
+                    "{MAX_BET_SHORT}", TextUtil.format(maximumBet));
             showCustomAmountDialog(player, game, cfg, input);
             return;
         }
 
         if (amount < minimumBet) {
-            Messages.CREATE_MINIMUM_AMOUNT.sendCurrency(player, game.getProvider(), "{MIN_BET}", TextUtil.numberFormat(minimumBet));
+            Messages.CREATE_MINIMUM_AMOUNT.sendCurrency(player, game.getProvider(),
+                    "{MIN_BET}", TextUtil.numberFormat(minimumBet),
+                    "{MIN_BET_SHORT}", TextUtil.format(minimumBet));
             showCustomAmountDialog(player, game, cfg, input);
             return;
         }
@@ -311,19 +317,22 @@ public class GameBuilderGUI {
                 plugin.getGameManager().addCoinflipGame(player.getUniqueId(), game.clone());
 
                 String formatted = NumberFormat.getNumberInstance(Locale.US).format(amount);
+                String formattedShort = TextUtil.format(amount);
 
                 if (cfg.getBoolean("settings.broadcast-coinflip-creation")) {
                     Messages.COINFLIP_CREATED_BROADCAST.broadcastCurrency(
                             provider.getIdentifier(),
                             "{PLAYER}", player.getName(),
                             "{CURRENCY}", provider.getDisplayName(),
-                            "{AMOUNT}", formatted
+                            "{AMOUNT}", formatted,
+                            "{AMOUNT_SHORT}", formattedShort
                     );
                 }
 
                 Messages.CREATED_GAME.sendCurrency(
                         player, provider.getIdentifier(),
                         "{AMOUNT}", formatted,
+                        "{AMOUNT_SHORT}", formattedShort,
                         "{CURRENCY}", provider.getDisplayName()
                 );
             }));
@@ -337,7 +346,9 @@ public class GameBuilderGUI {
 
         for (String line : section.getStringList("lore-header")) {
             if (line != null) {
-                lore.add(line.replace("{BET_AMOUNT}", TextUtil.numberFormat(game.getAmount())));
+                lore.add(line
+                        .replace("{BET_AMOUNT}", TextUtil.numberFormat(game.getAmount()))
+                        .replace("{BET_AMOUNT_SHORT}", TextUtil.format(game.getAmount())));
             }
         }
 

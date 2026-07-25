@@ -69,15 +69,6 @@ public class GamesGUI {
         String guiTitle = TextUtil.color(config.getString("games-gui.title", "&lCOINFLIP GAMES"));
         int guiRows = config.getInt("games-gui.rows", 6);
 
-        String materialName = config.getString("games-gui.coinflip-game.material", "PLAYER_HEAD");
-        ItemStackBuilder materialBuilder = null;
-        if (!"PLAYER_HEAD".equalsIgnoreCase(materialName)) {
-            Material material = Material.matchMaterial(materialName);
-            if (material != null) {
-                materialBuilder = new ItemStackBuilder(material);
-            }
-        }
-
         PaginatedGui gui = Gui.paginated()
                 .rows(guiRows)
                 .title(Component.text(guiTitle))
@@ -138,6 +129,8 @@ public class GamesGUI {
 
                 String valueFormatted = numberFormat.format(amount);
                 String taxedFormatted = numberFormat.format(taxed);
+                String valueFormattedShort = TextUtil.format(amount);
+                String taxedFormattedShort = TextUtil.format(taxed);
 
                 Player creatorOnline = (coinflipGame.getOfflinePlayer() != null)
                         ? coinflipGame.getOfflinePlayer().getPlayer() : null;
@@ -146,20 +139,38 @@ public class GamesGUI {
                     continue;
                 }
 
-                ItemStackBuilder displayItemBuilder = (materialBuilder != null)
-                        ? new ItemStackBuilder(materialBuilder.build())
-                        : new ItemStackBuilder(coinflipGame.getCachedHead());
+                ConfigurationSection currencyOverride = resolveCurrencyOverride(config, "games-gui.coinflip-game", providerForGame.getIdentifier());
 
-                String nameTemplate = config.getString("games-gui.coinflip-game.display_name", "&e{PLAYER}'s Coinflip");
+                String materialName = currencyOverride != null && currencyOverride.contains("material")
+                        ? currencyOverride.getString("material")
+                        : config.getString("games-gui.coinflip-game.material", "PLAYER_HEAD");
+
+                ItemStackBuilder displayItemBuilder;
+                if (!"PLAYER_HEAD".equalsIgnoreCase(materialName)) {
+                    Material material = Material.matchMaterial(materialName);
+                    displayItemBuilder = (material != null)
+                            ? new ItemStackBuilder(material)
+                            : new ItemStackBuilder(coinflipGame.getCachedHead());
+                } else {
+                    displayItemBuilder = new ItemStackBuilder(coinflipGame.getCachedHead());
+                }
+
+                String nameTemplate = currencyOverride != null && currencyOverride.contains("display_name")
+                        ? currencyOverride.getString("display_name")
+                        : config.getString("games-gui.coinflip-game.display_name", "&e{PLAYER}'s Coinflip");
                 displayItemBuilder.withName(nameTemplate.replace("{PLAYER}", creatorOnline.getName()));
 
-                List<String> loreTemplate = config.getStringList("games-gui.coinflip-game.lore");
+                List<String> loreTemplate = currencyOverride != null && currencyOverride.contains("lore")
+                        ? currencyOverride.getStringList("lore")
+                        : config.getStringList("games-gui.coinflip-game.lore");
                 List<String> lore = new ArrayList<>(loreTemplate.size());
                 for (String line : loreTemplate) {
                     lore.add(line
                             .replace("{TAX_RATE}", String.valueOf(taxRate))
                             .replace("{TAX_DEDUCTION}", taxedFormatted)
+                            .replace("{TAX_DEDUCTION_SHORT}", taxedFormattedShort)
                             .replace("{AMOUNT}", valueFormatted)
+                            .replace("{AMOUNT_SHORT}", valueFormattedShort)
                             .replace("{CURRENCY}", providerForGame.getDisplayName()));
                 }
 
@@ -235,6 +246,18 @@ public class GamesGUI {
         if (player.getOpenInventory().getTopInventory().equals(gui.getInventory())) {
             scheduler.runLater(task -> gui.update(), 2L);
         }
+    }
+
+    /**
+     * Resolves a per-currency override section for a GUI item, e.g. {@code basePath + "_overrides." + currencyIdentifier}.
+     * Returns null if no override section is configured for the currency.
+     */
+    private ConfigurationSection resolveCurrencyOverride(FileConfiguration config, String basePath, String currencyIdentifier) {
+        if (currencyIdentifier == null || currencyIdentifier.isEmpty()) {
+            return null;
+        }
+
+        return config.getConfigurationSection(basePath + "_overrides." + currencyIdentifier.toUpperCase(Locale.ROOT));
     }
 
     private @NotNull GuiItem getGuiItem(Player player, ItemStack newGameItem, String initialProviderKey) {

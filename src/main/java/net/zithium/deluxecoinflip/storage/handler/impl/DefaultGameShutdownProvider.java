@@ -11,6 +11,7 @@ import net.zithium.deluxecoinflip.config.Messages;
 import net.zithium.deluxecoinflip.economy.provider.EconomyProvider;
 import net.zithium.deluxecoinflip.game.CoinflipGame;
 import net.zithium.deluxecoinflip.storage.handler.GameShutdownProvider;
+import net.zithium.deluxecoinflip.utility.TextUtil;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
@@ -119,7 +120,10 @@ public record DefaultGameShutdownProvider(DeluxeCoinflipPlugin plugin) implement
 
         final Player online = plugin.getServer().getPlayer(playerId);
         if (online != null) {
-            Messages.GAME_REFUNDED.sendCurrency(online, providerIdentifier, "{AMOUNT}", amountFormatted, "{CURRENCY}", providerIdentifier);
+            Messages.GAME_REFUNDED.sendCurrency(online, providerIdentifier,
+                    "{AMOUNT}", amountFormatted,
+                    "{AMOUNT_SHORT}", TextUtil.format(amount),
+                    "{CURRENCY}", providerIdentifier);
         }
 
         final OfflinePlayer offline = plugin.getServer().getOfflinePlayer(playerId);

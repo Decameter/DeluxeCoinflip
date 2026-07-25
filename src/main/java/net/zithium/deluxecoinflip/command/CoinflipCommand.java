@@ -164,12 +164,18 @@ public class CoinflipCommand extends BaseCommand {
         final FileConfiguration config = plugin.getConfigHandler(ConfigType.CONFIG).getConfig();
 
         if (amount > config.getLong("settings.maximum-bet")) {
-            Messages.CREATE_MAXIMUM_AMOUNT.send(player, "{MAX_BET}", TextUtil.numberFormat(config.getLong("settings.maximum-bet")));
+            long maxBet = config.getLong("settings.maximum-bet");
+            Messages.CREATE_MAXIMUM_AMOUNT.send(player,
+                "{MAX_BET}", TextUtil.numberFormat(maxBet),
+                "{MAX_BET_SHORT}", TextUtil.format(maxBet));
             return;
         }
 
         if (amount < config.getLong("settings.minimum-bet")) {
-            Messages.CREATE_MINIMUM_AMOUNT.send(player, "{MIN_BET}", TextUtil.numberFormat(config.getLong("settings.minimum-bet")));
+            long minBet = config.getLong("settings.minimum-bet");
+            Messages.CREATE_MINIMUM_AMOUNT.send(player,
+                "{MIN_BET}", TextUtil.numberFormat(minBet),
+                "{MIN_BET_SHORT}", TextUtil.format(minBet));
             return;
         }
 
@@ -231,7 +237,8 @@ public class CoinflipCommand extends BaseCommand {
                             Messages.COINFLIP_CREATED_BROADCAST.sendCurrency(onlinePlayer, finalProvider.getIdentifier(),
                                 "{PLAYER}", player.getName(),
                                 "{CURRENCY}", finalProvider.getDisplayName(),
-                                "{AMOUNT}", TextUtil.numberFormat(amount));
+                                "{AMOUNT}", TextUtil.numberFormat(amount),
+                                "{AMOUNT_SHORT}", TextUtil.format(amount));
                         }
                     }
                 });
@@ -239,7 +246,8 @@ public class CoinflipCommand extends BaseCommand {
 
             Messages.CREATED_GAME.sendCurrency(player, finalProvider.getIdentifier(),
                 "{CURRENCY}", finalProvider.getDisplayName(),
-                "{AMOUNT}", TextUtil.numberFormat(amount));
+                "{AMOUNT}", TextUtil.numberFormat(amount),
+                "{AMOUNT_SHORT}", TextUtil.format(amount));
         }));
     }
 

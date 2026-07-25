@@ -278,8 +278,6 @@ public class CoinflipGUI {
         updatePlayerStats(storageManager, winner, finalWinAmount, beforeTax, true);
         updatePlayerStats(storageManager, loser, 0L, beforeTax, false);
 
-        String winAmountFormatted = TextUtil.numberFormat(finalWinAmount);
-        String taxedFormatted = TextUtil.numberFormat(taxed);
         String providerName = provider.getDisplayName();
 
         Player winnerOnline = winner.getPlayer();
@@ -290,20 +288,20 @@ public class CoinflipGUI {
 
             if (winnerOnline != null) {
                 Messages.GAME_FORFEIT.sendCurrency(winnerOnline, provider.getIdentifier(), replacePlaceholders(
-                        String.valueOf(taxRate), taxedFormatted, winner.getName(), loserName,
-                        providerName, winAmountFormatted));
+                        String.valueOf(taxRate), taxed, winner.getName(), loserName,
+                        providerName, finalWinAmount));
             }
         } else {
             if (winnerOnline != null) {
                 Messages.GAME_SUMMARY_WIN.sendCurrency(winnerOnline, provider.getIdentifier(), replacePlaceholders(
-                        String.valueOf(taxRate), taxedFormatted, winner.getName(), loser.getName(),
-                        providerName, winAmountFormatted));
+                        String.valueOf(taxRate), taxed, winner.getName(), loser.getName(),
+                        providerName, finalWinAmount));
             }
 
             if (loserOnline != null) {
                 Messages.GAME_SUMMARY_LOSS.sendCurrency(loserOnline, provider.getIdentifier(), replacePlaceholders(
-                        String.valueOf(taxRate), taxedFormatted, winner.getName(), loser.getName(),
-                        providerName, winAmountFormatted));
+                        String.valueOf(taxRate), taxed, winner.getName(), loser.getName(),
+                        providerName, finalWinAmount));
             }
 
             broadcastWinningMessage(finalWinAmount, taxed, winner.getName(), loser.getName(), providerName, provider.getIdentifier());
@@ -347,11 +345,11 @@ public class CoinflipGUI {
                     if (playerData.isDisplayBroadcastMessages()) {
                         Messages.COINFLIP_BROADCAST.sendCurrency(player, currencyIdentifier, replacePlaceholders(
                                 String.valueOf(taxRate),
-                                TextUtil.numberFormat(tax),
+                                tax,
                                 winner,
                                 loser,
                                 currency,
-                                TextUtil.numberFormat(winAmount)
+                                winAmount
                         ));
                     }
                 });
@@ -359,14 +357,16 @@ public class CoinflipGUI {
         }
     }
 
-    private Object[] replacePlaceholders(String taxRate, String taxDeduction, String winner, String loser, String currency, String winnings) {
+    private Object[] replacePlaceholders(String taxRate, long taxDeduction, String winner, String loser, String currency, long winnings) {
         return new Object[] {
                 "{TAX_RATE}", taxRate,
-                "{TAX_DEDUCTION}", taxDeduction,
+                "{TAX_DEDUCTION}", TextUtil.numberFormat(taxDeduction),
+                "{TAX_DEDUCTION_SHORT}", TextUtil.format(taxDeduction),
                 "{WINNER}", winner,
                 "{LOSER}", loser,
                 "{CURRENCY}", currency,
-                "{WINNINGS}", winnings
+                "{WINNINGS}", TextUtil.numberFormat(winnings),
+                "{WINNINGS_SHORT}", TextUtil.format(winnings)
         };
     }
 

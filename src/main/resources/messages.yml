@@ -16,6 +16,17 @@
 #       created_coinflip: "{PREFIX} &fCreated Coinflip game for &e{AMOUNT} &7({CURRENCY})&f!"
 #       created_coinflip_overrides:
 #         NEON_GEMS: "{PREFIX} &dCreated a Gem Coinflip for &e{AMOUNT} Gems&d!"
+#
+#   This also applies to general.prefix, so {PREFIX} itself can be swapped per currency:
+#     general:
+#       prefix: "<dark_gray>[<gradient:gold:yellow:gold><b>DeluxeCoinflip</gradient><dark_gray>]"
+#       prefix_overrides:
+#         NEON_GEMS: "<dark_gray>[<light_purple><b>Gems</b></light_purple><dark_gray>]"
+#
+# Shortened amount placeholders
+#   Every amount placeholder below ({AMOUNT}, {MIN_BET}, {MAX_BET}, {BET_AMOUNT}, {WINNINGS},
+#   {TAX_DEDUCTION}) also has a "_SHORT" counterpart (e.g. {AMOUNT_SHORT}) that renders the
+#   same number abbreviated (1000 -> 1k, 2500000 -> 2.5M, etc). Use whichever you prefer.
 
 general:
   prefix: "<dark_gray>[<gradient:gold:yellow:gold><b>DeluxeCoinflip</gradient><dark_gray>]"

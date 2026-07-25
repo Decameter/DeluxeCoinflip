@@ -4,6 +4,11 @@
 #
 # Developer API
 #   https://github.com/itzsave/DeluxeCoinflipAPI
+#
+# Shortened amount placeholders
+#   Amount placeholders used in GUI lore/names below ({AMOUNT}, {MIN_BET}, {MAX_BET},
+#   {BET_AMOUNT}, {TAX_DEDUCTION}) also have a "_SHORT" counterpart (e.g. {AMOUNT_SHORT})
+#   that renders the same number abbreviated (1000 -> 1k, 2500000 -> 2.5M, etc).
 
 # Should the plugin report stats to https://bstats.org/
 # All usage statistics are anonymous and has zero impact on performance.
@@ -220,6 +225,21 @@ games-gui:
       - "  &f{CURRENCY}"
       - ""
       - "&7&oClick here to start a Coinflip game"
+    # Per-currency icon overrides: add a sibling "coinflip-game_overrides" section keyed by
+    # the currency's provider identifier (same identifiers as settings.providers in this file,
+    # e.g. VAULT, CUSTOM_CURRENCY, NEON_GEMS). Any of material/display_name/lore may be set;
+    # unset keys fall back to the defaults above.
+    #
+    # coinflip-game_overrides:
+    #   NEON_GEMS:
+    #     material: AMETHYST_SHARD
+    #     display_name: "&d{PLAYER}"
+    #     lore:
+    #       - ""
+    #       - "&d&lGem Wager"
+    #       - "  &f{AMOUNT}"
+    #       - ""
+    #       - "&7&oClick here to start a Coinflip game"
   no-games:
     slot: 13
     material: BARRIER
