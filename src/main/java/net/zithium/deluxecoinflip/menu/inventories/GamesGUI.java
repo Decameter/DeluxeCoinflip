@@ -178,22 +178,25 @@ public class GamesGUI {
 
                 GuiItem gameItem = new GuiItem(gameDisplayItem);
                 gameItem.setAction(events -> {
-                    if (!gameManager.getCoinflipGames().containsKey(creatorOnline.getUniqueId())) {
-                        Messages.ERROR_GAME_UNAVAILABLE.send(player);
-                        openInventory(player);
-                        return;
-                    }
-
                     if (player.getUniqueId().equals(creatorOnline.getUniqueId())) {
                         Messages.ERROR_COINFLIP_SELF.send(player);
                         scheduler.runAtEntity(player, task -> gui.close(player));
                         return;
                     }
 
-                    CoinflipGame selectedGame = gameManager.getCoinflipGames().get(creatorOnline.getUniqueId());
+                    // Atomically claim the game so a fast double-click (or any other
+                    // concurrent accept attempt) can't process the same game twice.
+                    CoinflipGame selectedGame = gameManager.claimCoinflipGame(creatorOnline.getUniqueId());
+                    if (selectedGame == null) {
+                        Messages.ERROR_GAME_UNAVAILABLE.send(player);
+                        openInventory(player);
+                        return;
+                    }
+
                     EconomyProvider selectedProvider = economyManager.getEconomyProvider(selectedGame.getProvider());
                     if (selectedProvider == null) {
                         Messages.INVALID_CURRENCY.send(player);
+                        gameManager.restoreCoinflipGame(creatorOnline.getUniqueId(), selectedGame);
                         return;
                     }
 
@@ -216,6 +219,7 @@ public class GamesGUI {
                             }
 
                             Messages.INSUFFICIENT_FUNDS.sendCurrency(player, selectedProvider.getIdentifier());
+                            gameManager.restoreCoinflipGame(creatorOnline.getUniqueId(), selectedGame);
                             return;
                         }
 
