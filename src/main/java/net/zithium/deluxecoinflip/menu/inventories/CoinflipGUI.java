@@ -215,7 +215,7 @@ public class CoinflipGUI {
 
         final UUID opponentId = game.getOpponentUUID();
         if (opponentId == null) {
-            plugin.getGameManager().removeCoinflipGame(game.getPlayerUUID());
+            plugin.getGameManager().removeCoinflipGame(game.getPlayerUUID(), game);
             plugin.getActiveGamesCache().unregister(game);
             return;
         }
@@ -231,7 +231,7 @@ public class CoinflipGUI {
                 winnerId = opponentId;
                 loserId = game.getPlayerUUID();
             } else {
-                plugin.getGameManager().removeCoinflipGame(game.getPlayerUUID());
+                plugin.getGameManager().removeCoinflipGame(game.getPlayerUUID(), game);
                 plugin.getActiveGamesCache().unregister(game);
                 return;
             }
@@ -243,7 +243,7 @@ public class CoinflipGUI {
         EconomyProvider provider = economyManager.getEconomyProvider(game.getProvider());
         if (provider == null) {
             plugin.getLogger().warning("Missing economy provider '" + game.getProvider() + "'; payout skipped.");
-            plugin.getGameManager().removeCoinflipGame(game.getPlayerUUID());
+            plugin.getGameManager().removeCoinflipGame(game.getPlayerUUID(), game);
             plugin.getActiveGamesCache().unregister(game);
             return;
         }
@@ -270,7 +270,7 @@ public class CoinflipGUI {
                 return null;
             });
             new CoinflipCompletedEvent(finalWinnerId, finalLoserId, winner, loser, providedWinAmount, forfeit).callEvent();
-            plugin.getGameManager().removeCoinflipGame(game.getPlayerUUID());
+            plugin.getGameManager().removeCoinflipGame(game.getPlayerUUID(), game);
             plugin.getActiveGamesCache().unregister(game);
         });
 
