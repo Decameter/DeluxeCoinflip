@@ -50,7 +50,16 @@ public class GameManager {
      */
     public void removeCoinflipGame(@NotNull UUID uuid) {
         coinflipGames.remove(uuid);
+        deleteStoredCoinflip(uuid);
+    }
 
+    public void removeCoinflipGame(@NotNull UUID uuid, @NotNull CoinflipGame game) {
+        if (coinflipGames.remove(uuid, game)) {
+            deleteStoredCoinflip(uuid);
+        }
+    }
+
+    private void deleteStoredCoinflip(@NotNull UUID uuid) {
         if (!plugin.isEnabled()) {
             try {
                 storageManager.getStorageHandler().deleteCoinflip(uuid);
