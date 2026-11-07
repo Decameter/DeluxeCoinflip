@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class TextUtil {
@@ -40,7 +41,7 @@ public final class TextUtil {
     private static final BigDecimal BILLION  = new BigDecimal(1_000_000_000);
     private static final BigDecimal TRILLION = new BigDecimal(1_000_000_000_000L);
 
-    private static final Locale PARSE_LOCALE = Locale.US;
+    private static final Pattern AMOUNT_INPUT = Pattern.compile("([0-9.,]*[0-9][0-9.,]*)\\s*([kKmMbBtT])?");
 
     private static final char NBSP = '\u00A0';
 
@@ -184,26 +185,27 @@ public final class TextUtil {
             return null;
         }
 
-        final String sanitized = rawInput.replaceAll("[^0-9.,]", "");
-        final String remainder = rawInput.replace(sanitized, "").toUpperCase(Locale.ROOT);
-
-        BigDecimal multiplier = null;
-        switch (remainder) {
-            case "" -> {
-            }
-            case "K" -> multiplier = THOUSAND;
-            case "M" -> multiplier = MILLION;
-            case "B" -> multiplier = BILLION;
-            case "T" -> multiplier = TRILLION;
-            default -> {
-                return null;
-            }
+        final Matcher matcher = AMOUNT_INPUT.matcher(rawInput);
+        if (!matcher.matches()) {
+            return null;
         }
 
+        final String numberPart = normalizeSeparators(matcher.group(1));
+        if (numberPart == null) {
+            return null;
+        }
+
+        final String suffix = matcher.group(2) == null ? "" : matcher.group(2).toUpperCase(Locale.ROOT);
+        BigDecimal multiplier = switch (suffix) {
+            case "K" -> THOUSAND;
+            case "M" -> MILLION;
+            case "B" -> BILLION;
+            case "T" -> TRILLION;
+            default -> null;
+        };
+
         try {
-            NumberFormat nf = NumberFormat.getInstance(PARSE_LOCALE);
-            Number parsed = nf.parse(sanitized);
-            BigDecimal amount = new BigDecimal(parsed.toString());
+            BigDecimal amount = new BigDecimal(numberPart);
             if (multiplier != null) {
                 amount = amount.multiply(multiplier);
             }
@@ -213,5 +215,75 @@ public final class TextUtil {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    /**
+     * Converts a number using either ',' or '.' as decimal/grouping separator
+     * into a plain BigDecimal-compatible string (e.g. "1234.5").
+     * <ul>
+     *   <li>Both separators present: the last one is the decimal separator ("1.234,5", "1,234.5").</li>
+     *   <li>One separator used multiple times: grouping ("1.000.000", "1,000,000").</li>
+     *   <li>One separator used once: grouping if followed by exactly 3 digits ("1,500", "1.500"),
+     *       otherwise decimal ("1,5", "1.25").</li>
+     * </ul>
+     * Returns null if the input is malformed.
+     */
+    private static String normalizeSeparators(String number) {
+        final int lastComma = number.lastIndexOf(',');
+        final int lastDot = number.lastIndexOf('.');
+
+        String integerPart;
+        String fractionPart = "";
+
+        if (lastComma >= 0 && lastDot >= 0) {
+            final int decimalIndex = Math.max(lastComma, lastDot);
+            final char groupingChar = decimalIndex == lastComma ? '.' : ',';
+            integerPart = number.substring(0, decimalIndex);
+            fractionPart = number.substring(decimalIndex + 1);
+            // The grouping separator must only appear before the decimal separator.
+            if (fractionPart.indexOf(groupingChar) >= 0 || !isValidGrouping(integerPart, groupingChar)) {
+                return null;
+            }
+            integerPart = integerPart.replace(String.valueOf(groupingChar), "");
+        } else if (lastComma >= 0 || lastDot >= 0) {
+            final char sep = lastComma >= 0 ? ',' : '.';
+            final int first = number.indexOf(sep);
+            final int last = number.lastIndexOf(sep);
+            final int digitsAfter = number.length() - last - 1;
+
+            if (first != last || (digitsAfter == 3 && first > 0)) {
+                if (!isValidGrouping(number, sep)) {
+                    return null;
+                }
+                integerPart = number.replace(String.valueOf(sep), "");
+            } else {
+                integerPart = number.substring(0, last);
+                fractionPart = number.substring(last + 1);
+            }
+        } else {
+            integerPart = number;
+        }
+
+        if (integerPart.isEmpty()) {
+            integerPart = "0";
+        }
+        if (fractionPart.isEmpty()) {
+            return integerPart;
+        }
+        return integerPart + "." + fractionPart;
+    }
+
+    /** Checks that groups after the first are exactly 3 digits, e.g. "1,234,567". */
+    private static boolean isValidGrouping(String number, char groupingChar) {
+        final String[] groups = number.split(Pattern.quote(String.valueOf(groupingChar)), -1);
+        if (groups[0].isEmpty() && groups.length > 1) {
+            return false;
+        }
+        for (int i = 1; i < groups.length; i++) {
+            if (groups[i].length() != 3) {
+                return false;
+            }
+        }
+        return true;
     }
 }
